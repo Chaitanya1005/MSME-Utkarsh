@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "MSME Utkarsh",
+    "slug": "cbipes",
+    "version": "0.1.0",
+    "platforms": [
+      "android",
+      "ios"
+    ],
+    "scheme": "cbipes",
+    "plugins": [
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "MSME Utkarsh needs microphone access so branch Heads can record voice lead updates."
+        }
+      ],
+      "expo-asset"
+    ]
+  }
+}

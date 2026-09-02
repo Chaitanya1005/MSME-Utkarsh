@@ -1,0 +1,425 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model CentralOffice {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  zones     Zone[]
+
+  @@map("central_offices")
+}
+
+model Zone {
+  id              String        @id @default(cuid())
+  name            String
+  centralOfficeId String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  regions         Region[]
+  centralOffice   CentralOffice @relation(fields: [centralOfficeId], references: [id])
+
+  @@index([centralOfficeId])
+  @@map("zones")
+}
+
+model Region {
+  id        String   @id @default(cuid())
+  name      String
+  zoneId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  branches  Branch[]
+  leads     Lead[]
+  zone      Zone     @relation(fields: [zoneId], references: [id])
+  rm        User?
+
+  @@index([zoneId])
+  @@map("regions")
+}
+
+model Branch {
+  id        String   @id @default(cuid())
+  name      String
+  regionId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  region    Region   @relation(fields: [regionId], references: [id])
+  leads     Lead[]
+  bm        User?
+
+  followUpTargets     FollowUpTarget[]
+  calls               Call[]
+  voiceUpdateSessions VoiceUpdateSession[]
+
+  @@index([regionId])
+  @@map("branches")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  name         String
+  role         Role
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  regionId     String?  @unique
+  branchId     String?  @unique
+  branch       Branch?  @relation(fields: [branchId], references: [id])
+  region       Region?  @relation(fields: [regionId], references: [id])
+
+  // Contact information used for Phase 2 message-based follow-up. Both are
+  // optional because Phase 1 seed data never needed them; a BM must have
+  // the relevant one populated (phoneNumber for WhatsApp, email for Email)
+  // before a follow-up can actually be dispatched to them — this is
+  // validated at the service layer, not enforced by a DB constraint, since
+  // an RM/CO/ZM legitimately has neither.
+  phoneNumber String?
+  email       String?
+
+  initiatedFollowUps FollowUp[]
+  proposedUpdates    LeadUpdateProposal[]
+  performedActivity  LeadActivity[]
+  voiceSessions      VoiceUpdateSession[]
+  initiatedCalls     Call[]               @relation("CallsInitiated")
+  receivedCalls      Call[]               @relation("CallsReceived")
+
+  @@index([role])
+  @@map("users")
+}
+
+model Lead {
+  id                        String               @id @default(cuid())
+  sourceSrNo                String?              @unique
+  customerName              String
+  customerPrimaryPhone      String
+  subProductName            String
+  amount                    Decimal              @db.Decimal(14, 2)
+  sourceLeadStatus          String
+  sourceCategorization      SourceCategorization
+  sourceStageProgress       SourceStageProgress
+  tentativeSanctionDate     DateTime?
+  tentativeDisbursementDate DateTime?
+  sourceRemarks             String?
+  cbiPesStage               PipelineStage        @default(INTERESTED)
+  branchId                  String?
+  regionId                  String?
+  createdAt                 DateTime             @default(now())
+  updatedAt                 DateTime             @updatedAt
+  branch                    Branch?              @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  region                    Region?              @relation(fields: [regionId], references: [id], onDelete: Restrict)
+
+  updateProposals LeadUpdateProposal[]
+  activity        LeadActivity[]
+
+  @@index([branchId])
+  @@index([regionId])
+  @@index([cbiPesStage])
+  @@map("leads")
+}
+
+enum Role {
+  RM
+  BM
+  CO
+  ZM
+}
+
+enum PipelineStage {
+  INTERESTED
+  CONTACTED
+  APPLICATION
+  APPROVAL
+  CONVERSION
+}
+
+enum SourceCategorization {
+  A
+  B
+  C
+  D
+}
+
+enum SourceStageProgress {
+  UNDER_PROCESS
+  SANCTIONED
+  DOC_NOT_EXECUTED
+  PENDING_AT_RAC
+  DISBURSED
+}
+
+// ---------------------------------------------------------------------------
+// Phase 2 — Message-based follow-up
+// ---------------------------------------------------------------------------
+//
+// A FollowUp is the RM-initiated action ("notify these branches"); it can
+// target one or many branches at once (spec section 19), so the shared
+// fields (who initiated it, which channel, what message) live on FollowUp
+// once, while each branch's individual delivery/access state lives on its
+// own FollowUpTarget row. This avoids both "a collection of unrelated
+// single-branch hacks" and an over-normalized join-table-of-everything.
+
+enum FollowUpChannel {
+  WHATSAPP
+  EMAIL
+}
+
+// Deliberately minimal state model (spec section 10): PENDING covers both
+// "not yet dispatched" (WhatsApp, which is a client-side deep-link handoff
+// the RM's device performs — see docs/PHASE2_SCOPE.md) and "provider
+// dispatch failed transiently"; SENT means the backend (Email) or the RM's
+// own device (WhatsApp, RM-confirmed) successfully handed the message off;
+// FAILED means dispatch could not be attempted at all (e.g. BM has no
+// email/phone on file); ACCESSED means the BM actually used the secure
+// access link. Phase 3 can extend this without touching Phase 2 code paths
+// that only care about PENDING vs. terminal states.
+enum FollowUpTargetStatus {
+  PENDING
+  SENT
+  FAILED
+  ACCESSED
+}
+
+model FollowUp {
+  id                String          @id @default(cuid())
+  initiatedByUserId String
+  channel           FollowUpChannel
+  // The final composed message body (template + RM customization already
+  // merged). Stored as sent/queued, not re-derived later, so a follow-up's
+  // history reflects exactly what was communicated at the time.
+  messageBody       String
+  createdAt         DateTime        @default(now())
+
+  initiatedBy User             @relation(fields: [initiatedByUserId], references: [id], onDelete: Restrict)
+  targets     FollowUpTarget[]
+
+  @@index([initiatedByUserId])
+  @@map("follow_ups")
+}
+
+model FollowUpTarget {
+  id         String               @id @default(cuid())
+  followUpId String
+  branchId   String
+  status     FollowUpTargetStatus @default(PENDING)
+
+  // Secure BM access mechanism (spec section 15): the message contains
+  // only an opaque, single-purpose token — never a JWT or password. Only
+  // this SHA-256 hash of that token is persisted, so a database read alone
+  // can never reconstruct a usable credential (mirrors password handling).
+  accessTokenHash String    @unique
+  tokenExpiresAt  DateTime
+  sentAt          DateTime?
+  accessedAt      DateTime?
+  failureReason   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  followUp FollowUp @relation(fields: [followUpId], references: [id], onDelete: Cascade)
+  branch   Branch   @relation(fields: [branchId], references: [id], onDelete: Restrict)
+
+  @@index([followUpId])
+  @@index([branchId])
+  @@map("follow_up_targets")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 3/4 — Unified lead-update pipeline (manual + AI voice)
+// ---------------------------------------------------------------------------
+//
+// The core invariant (see docs/PHASE3_4_SCOPE.md): every lead-stage change,
+// whichever source it came from, passes through exactly one model —
+// LeadUpdateProposal — and exactly one confirmation code path
+// (services/leadUpdate.service.ts#confirmProposal). The AI voice pipeline
+// (VoiceUpdateSession) only ever produces PENDING LeadUpdateProposal rows;
+// it has no code path that touches Lead.cbiPesStage directly. Only a BM
+// confirming a PENDING proposal does, and that confirmation always also
+// writes a LeadActivity row in the same transaction.
+
+enum UpdateSource {
+  MANUAL
+  VOICE_AI
+}
+
+enum ProposalStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+}
+
+model LeadUpdateProposal {
+  id               String         @id @default(cuid())
+  leadId           String
+  proposedByUserId String
+  source           UpdateSource
+  previousStage    PipelineStage
+  proposedStage    PipelineStage
+  remarks          String?
+  status           ProposalStatus @default(PENDING)
+
+  // Populated only for source = VOICE_AI, linking a proposal back to the
+  // recording/transcript it was extracted from — useful for audit ("why
+  // did the AI suggest this") without duplicating the transcript per
+  // proposal.
+  voiceSessionId    String?
+  transcriptExcerpt String?
+
+  createdAt   DateTime  @default(now())
+  confirmedAt DateTime?
+
+  lead         Lead                @relation(fields: [leadId], references: [id], onDelete: Restrict)
+  proposedBy   User                @relation(fields: [proposedByUserId], references: [id], onDelete: Restrict)
+  voiceSession VoiceUpdateSession? @relation(fields: [voiceSessionId], references: [id], onDelete: SetNull)
+  activity     LeadActivity?
+
+  @@index([leadId])
+  @@index([proposedByUserId])
+  @@index([status])
+  @@index([voiceSessionId])
+  @@map("lead_update_proposals")
+}
+
+// The audit trail (spec section 6). Only ever written once, at the moment
+// a PENDING proposal is confirmed — never edited afterward. This is
+// deliberately a separate model from LeadUpdateProposal rather than just
+// "PENDING/CONFIRMED/REJECTED proposals are the history": a REJECTED
+// proposal is not part of the lead's real history, and keeping activity
+// rows immutable and confirmation-only makes "what actually happened to
+// this lead" a trivial, unambiguous query.
+model LeadActivity {
+  id                String        @id @default(cuid())
+  leadId            String
+  previousStage     PipelineStage
+  newStage          PipelineStage
+  remarks           String?
+  performedByUserId String
+  source            UpdateSource
+  proposalId        String        @unique
+  createdAt         DateTime      @default(now())
+
+  lead        Lead               @relation(fields: [leadId], references: [id], onDelete: Restrict)
+  performedBy User               @relation(fields: [performedByUserId], references: [id], onDelete: Restrict)
+  proposal    LeadUpdateProposal @relation(fields: [proposalId], references: [id], onDelete: Restrict)
+
+  @@index([leadId])
+  @@map("lead_activity")
+}
+
+enum VoiceSessionStatus {
+  TRANSCRIBED
+  EXTRACTED
+  FAILED
+}
+
+// One BM voice interaction, which may yield multiple LeadUpdateProposal
+// rows (spec section 7's "multiple lead updates from one voice
+// interaction"). See docs/PHASE3_4_SCOPE.md "AI provider boundary" for
+// why `transcript` is BM-supplied text in this environment rather than
+// server-side speech-to-text output.
+model VoiceUpdateSession {
+  id                String             @id @default(cuid())
+  branchId          String
+  performedByUserId String
+  transcript        String
+  status            VoiceSessionStatus
+  failureReason     String?
+  createdAt         DateTime           @default(now())
+
+  branch      Branch               @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  performedBy User                 @relation(fields: [performedByUserId], references: [id], onDelete: Restrict)
+  proposals   LeadUpdateProposal[]
+
+  @@index([branchId])
+  @@index([performedByUserId])
+  @@map("voice_update_sessions")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 5 — Calling foundation
+// ---------------------------------------------------------------------------
+//
+// Deliberately minimal state model: without a real telephony provider
+// there is no ringing/connected signal to model yet. INITIATED means "the
+// provider boundary accepted the request" (in dev, the mock provider;
+// later, a real Twilio call-create response); FAILED means the provider
+// boundary rejected it or authorization/data was missing before it ever
+// reached a provider. COMPLETED exists for a provider webhook to set
+// later and is not written by any code in this phase.
+
+enum CallStatus {
+  INITIATED
+  FAILED
+  COMPLETED
+}
+
+model Call {
+  id                String     @id @default(cuid())
+  initiatedByUserId String
+  branchId          String
+  calledUserId      String
+  calledPhoneNumber String
+  status            CallStatus
+  // Set once a real provider is wired in (e.g. a Twilio Call SID).
+  // Always null from every code path in this phase.
+  providerCallId    String?
+  failureReason     String?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  initiatedBy User   @relation("CallsInitiated", fields: [initiatedByUserId], references: [id], onDelete: Restrict)
+  calledUser  User   @relation("CallsReceived", fields: [calledUserId], references: [id], onDelete: Restrict)
+  branch      Branch @relation(fields: [branchId], references: [id], onDelete: Restrict)
+
+  @@index([initiatedByUserId])
+  @@index([calledUserId])
+  @@index([branchId])
+  @@map("calls")
+}
+
+enum PerformancePeriodType {
+  MONTH
+  QUARTER
+  ANNUAL
+}
+
+model BranchPerformance {
+  id             String                @id @default(cuid())
+  branchId       String
+  periodType     PerformancePeriodType
+  periodStart    DateTime
+  periodEnd      DateTime
+  targetAmount   Decimal               @db.Decimal(15, 2)
+  achievedAmount Decimal               @db.Decimal(15, 2)
+  updatedAt      DateTime              @updatedAt
+  createdAt      DateTime              @default(now())
+
+  updates PerformanceUpdate[]
+
+  @@unique([branchId, periodType, periodStart, periodEnd])
+  @@index([branchId])
+  @@index([periodType, periodStart, periodEnd])
+}
+
+model PerformanceUpdate {
+  id                  String   @id @default(cuid())
+  branchPerformanceId String
+  previousAmount      Decimal  @db.Decimal(15, 2)
+  newAmount           Decimal  @db.Decimal(15, 2)
+  remarks             String?
+  updatedByUserId     String
+  createdAt           DateTime @default(now())
+
+  performance BranchPerformance @relation(fields: [branchPerformanceId], references: [id], onDelete: Cascade)
+
+  @@index([branchPerformanceId])
+  @@index([updatedByUserId])
+}

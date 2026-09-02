@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "MSME Utkarsh",
+    "slug": "cbipes",
+    "version": "0.1.0",
+    "platforms": [
+      "android",
+      "ios"
+    ]
+  }
+}
