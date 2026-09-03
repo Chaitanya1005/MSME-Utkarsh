@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "MSME Utkarsh",
-    "slug": "cbipes",
+    "slug": "msme-utkarsh",
     "version": "0.1.0",
     "platforms": [
       "android",
@@ -16,6 +16,19 @@
         }
       ],
       "expo-asset"
-    ]
+    ],
+    "android": {
+      "package": "com.cbipestemp",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
+    },
+    "extra": {
+      "eas": {
+        "projectId": "a90ac4b6-9a36-49be-89af-62545e2e09dc"
+      }
+    },
+    "owner": "chaitanyas-team1005"
   }
 }
