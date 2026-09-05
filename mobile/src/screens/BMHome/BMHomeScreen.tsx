@@ -68,25 +68,33 @@ export function BMHomeScreen({ navigation }: any) {
   const stats = useMemo(() => {
     const total = leads.length;
 
-    const contacted = leads.filter(
-      (lead) => lead.cbiPesStage === 'CONTACTED'
-    ).length;
-
-    const inProgress = leads.filter(
+    // Early stage: lead has been confirmed and documents are being collected.
+    const documentation = leads.filter(
       (lead) =>
-        lead.cbiPesStage === 'INTERESTED' ||
-        lead.cbiPesStage === 'APPLICATION'
+        lead.cbiPesStage === 'LEAD_CONFIRMED' ||
+        lead.cbiPesStage === 'DOCUMENTS_RECEIVED'
     ).length;
 
-    const approval = leads.filter(
-      (lead) => lead.cbiPesStage === 'APPROVAL'
+    // Mid stage: file is actively moving through branch/underwriting/RAC processing.
+    const processing = leads.filter(
+      (lead) =>
+        lead.cbiPesStage === 'BRANCH_PROCESSING' ||
+        lead.cbiPesStage === 'SANCTIONED' ||
+        lead.cbiPesStage === 'TO_RAC'
+    ).length;
+
+    // Late stage: loan has been approved and/or paid out.
+    const approved = leads.filter(
+      (lead) =>
+        lead.cbiPesStage === 'APPROVED' ||
+        lead.cbiPesStage === 'DISBURSED'
     ).length;
 
     return {
       total,
-      contacted,
-      inProgress,
-      approval,
+      documentation,
+      processing,
+      approved,
     };
   }, [leads]);
 
@@ -280,11 +288,11 @@ export function BMHomeScreen({ navigation }: any) {
 
         <View style={styles.statItem}>
           <Text style={styles.statNumber}>
-            {stats.contacted}
+            {stats.documentation}
           </Text>
 
           <Text style={styles.statLabel}>
-            Contacted
+            Documentation
           </Text>
         </View>
 
@@ -292,11 +300,11 @@ export function BMHomeScreen({ navigation }: any) {
 
         <View style={styles.statItem}>
           <Text style={styles.statNumber}>
-            {stats.inProgress}
+            {stats.processing}
           </Text>
 
           <Text style={styles.statLabel}>
-            In Progress
+            Processing
           </Text>
         </View>
 
@@ -304,11 +312,11 @@ export function BMHomeScreen({ navigation }: any) {
 
         <View style={styles.statItem}>
           <Text style={styles.statNumber}>
-            {stats.approval}
+            {stats.approved}
           </Text>
 
           <Text style={styles.statLabel}>
-            Approval
+            Approved
           </Text>
         </View>
       </View>

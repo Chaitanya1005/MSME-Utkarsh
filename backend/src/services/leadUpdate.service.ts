@@ -13,7 +13,15 @@ import { AuthTokenPayload } from '../types/domain';
 import { AppError, AuthorizationError, NotFoundError, ValidationError } from '../utils/AppError';
 import { canAccessLead } from './authorization';
 
-const VALID_STAGES: PipelineStage[] = ['INTERESTED', 'CONTACTED', 'APPLICATION', 'APPROVAL', 'CONVERSION'];
+const VALID_STAGES: PipelineStage[] = [
+  'LEAD_CONFIRMED',
+  'DOCUMENTS_RECEIVED',
+  'BRANCH_PROCESSING',
+  'SANCTIONED',
+  'TO_RAC',
+  'APPROVED',
+  'DISBURSED',
+];
 
 // The one and only place authorization is checked before touching a
 // lead's proposals — a BM may only ever act on leads belonging to their

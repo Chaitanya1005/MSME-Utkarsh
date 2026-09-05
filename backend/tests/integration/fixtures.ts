@@ -9,14 +9,23 @@ export const TEST_PASSWORD = 'TestPass123!';
 // in the spec, so cross-region and cross-branch denial can be asserted
 // precisely against IDs the tests know about.
 export async function seedTestFixtures(prisma: PrismaClient) {
-await prisma.followUpTarget.deleteMany();
-await prisma.followUp.deleteMany();
-await prisma.lead.deleteMany();
-await prisma.user.deleteMany();
-await prisma.branch.deleteMany();
-await prisma.region.deleteMany();
-await prisma.zone.deleteMany();
-await prisma.centralOffice.deleteMany();
+  // FK-safe order: LeadActivity references LeadUpdateProposal (and Lead),
+  // and LeadUpdateProposal references Lead — both must be cleared before
+  // Lead itself, or a later suite's cleanup fails against rows a previous
+  // suite's Phase 3/4 tests left behind (this file is shared by every
+  // tests/integration/*.test.ts run against one persistent test database).
+  await prisma.leadActivity.deleteMany();
+  await prisma.leadUpdateProposal.deleteMany();
+  await prisma.voiceUpdateSession.deleteMany();
+  await prisma.call.deleteMany();
+  await prisma.followUpTarget.deleteMany();
+  await prisma.followUp.deleteMany();
+  await prisma.lead.deleteMany();
+  await prisma.user.deleteMany();
+  await prisma.branch.deleteMany();
+  await prisma.region.deleteMany();
+  await prisma.zone.deleteMany();
+  await prisma.centralOffice.deleteMany();
 
   const centralOffice = await prisma.centralOffice.create({ data: { name: 'Test Central Office' } });
   const zoneA = await prisma.zone.create({ data: { name: 'Zone A', centralOfficeId: centralOffice.id } });
@@ -62,7 +71,7 @@ await prisma.centralOffice.deleteMany();
       sourceLeadStatus: 'Open',
       sourceCategorization: 'B',
       sourceStageProgress: 'UNDER_PROCESS',
-      cbiPesStage: 'INTERESTED',
+      cbiPesStage: 'LEAD_CONFIRMED',
       branchId: branchA101.id,
     },
   });
@@ -76,7 +85,7 @@ await prisma.centralOffice.deleteMany();
       sourceLeadStatus: 'Open',
       sourceCategorization: 'A',
       sourceStageProgress: 'SANCTIONED',
-      cbiPesStage: 'APPROVAL',
+      cbiPesStage: 'SANCTIONED',
       branchId: branchB101.id,
     },
   });
@@ -90,7 +99,7 @@ await prisma.centralOffice.deleteMany();
       sourceLeadStatus: 'Open',
       sourceCategorization: 'C',
       sourceStageProgress: 'UNDER_PROCESS',
-      cbiPesStage: 'INTERESTED',
+      cbiPesStage: 'LEAD_CONFIRMED',
       regionId: regionA1.id,
     },
   });

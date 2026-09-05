@@ -3,7 +3,19 @@ import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } fr
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchMyBranchProposals, confirmProposalsBatch, rejectProposal } from '../../api/leadUpdateApi';
 import { LoadingState, EmptyState, ErrorState } from '../../components/StatusStates';
-import { LeadUpdateProposal } from '../../types/api';
+import { LeadUpdateProposal, PipelineStage } from '../../types/api';
+
+// Raw enum values (e.g. "DOCUMENTS_RECEIVED") read poorly next to each
+// other in a "previous -> proposed" line, so map to short display labels.
+const STAGE_LABELS: Record<PipelineStage, string> = {
+  LEAD_CONFIRMED: 'Lead Confirmed',
+  DOCUMENTS_RECEIVED: 'Documents Received',
+  BRANCH_PROCESSING: 'Branch Processing',
+  SANCTIONED: 'Sanctioned',
+  TO_RAC: 'To RAC',
+  APPROVED: 'Approved',
+  DISBURSED: 'Disbursed',
+};
 
 // The single confirmation screen for BOTH manual and voice-sourced
 // proposals (spec section 5's unified pipeline, section 14's AI review
@@ -124,7 +136,8 @@ function ProposalCard({
         </View>
       </TouchableOpacity>
       <Text style={styles.stageChange}>
-        {proposal.previousStage} → {proposal.proposedStage}
+        {STAGE_LABELS[proposal.previousStage] ?? proposal.previousStage} →{' '}
+        {STAGE_LABELS[proposal.proposedStage] ?? proposal.proposedStage}
       </Text>
       {proposal.remarks ? <Text style={styles.remarks}>{proposal.remarks}</Text> : null}
       <TouchableOpacity style={styles.rejectLink} onPress={onReject} testID={`reject-proposal-${proposal.id}`}>

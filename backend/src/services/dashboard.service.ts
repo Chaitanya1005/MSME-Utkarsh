@@ -30,7 +30,15 @@ export interface RmDashboard {
   };
 }
 
-const ALL_STAGES = ['INTERESTED', 'CONTACTED', 'APPLICATION', 'APPROVAL', 'CONVERSION'] as const;
+const ALL_STAGES = [
+  'LEAD_CONFIRMED',
+  'DOCUMENTS_RECEIVED',
+  'BRANCH_PROCESSING',
+  'SANCTIONED',
+  'TO_RAC',
+  'APPROVED',
+  'DISBURSED',
+] as const;
 
 export async function getRmDashboard(user: AuthTokenPayload): Promise<RmDashboard> {
   if (user.role !== 'RM') {

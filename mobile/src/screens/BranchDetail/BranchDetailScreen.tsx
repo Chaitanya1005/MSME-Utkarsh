@@ -26,21 +26,25 @@ import { RMStackParamList } from '../../navigation/RootNavigator';
 type Props = NativeStackScreenProps<RMStackParamList, 'BranchDetail'>;
 
 const STAGE_ORDER: PipelineStage[] = [
-  'INTERESTED',
-  'CONTACTED',
-  'APPLICATION',
-  'APPROVAL',
-  'CONVERSION',
+  'LEAD_CONFIRMED',
+  'DOCUMENTS_RECEIVED',
+  'BRANCH_PROCESSING',
+  'SANCTIONED',
+  'TO_RAC',
+  'APPROVED',
+  'DISBURSED',
 ];
 
 /*
  * Pipeline colour system:
  *
- * Interested  -> Blue
- * Contacted   -> Yellow
- * Application -> Yellow
- * Approval    -> Yellow
- * Conversion  -> Green
+ * Lead Confirmed     -> Blue
+ * Documents Received -> Yellow
+ * Branch Processing  -> Yellow
+ * Sanctioned         -> Yellow
+ * To RAC             -> Yellow
+ * Approved           -> Yellow
+ * Disbursed          -> Green
  */
 const STAGE_META: Record<
   PipelineStage,
@@ -50,32 +54,44 @@ const STAGE_META: Record<
     background: string;
   }
 > = {
-  INTERESTED: {
-    short: 'Interested',
+  LEAD_CONFIRMED: {
+    short: 'Lead Confirmed',
     color: '#0B5CAB',
     background: '#EAF2FB',
   },
 
-  CONTACTED: {
-    short: 'Contacted',
+  DOCUMENTS_RECEIVED: {
+    short: 'Documents Received',
     color: '#B7791F',
     background: '#FFF7E3',
   },
 
-  APPLICATION: {
-    short: 'Application',
+  BRANCH_PROCESSING: {
+    short: 'Branch Processing',
     color: '#B7791F',
     background: '#FFF7E3',
   },
 
-  APPROVAL: {
-    short: 'Approval',
+  SANCTIONED: {
+    short: 'Sanctioned',
     color: '#B7791F',
     background: '#FFF7E3',
   },
 
-  CONVERSION: {
-    short: 'Conversion',
+  TO_RAC: {
+    short: 'To RAC',
+    color: '#B7791F',
+    background: '#FFF7E3',
+  },
+
+  APPROVED: {
+    short: 'Approved',
+    color: '#B7791F',
+    background: '#FFF7E3',
+  },
+
+  DISBURSED: {
+    short: 'Disbursed',
     color: '#16845A',
     background: '#ECF8F1',
   },
@@ -142,11 +158,13 @@ export function BranchDetailScreen({
   const leads = leadsQuery.data?.items ?? [];
 
   const stageCounts: Record<PipelineStage, number> = {
-    INTERESTED: 0,
-    CONTACTED: 0,
-    APPLICATION: 0,
-    APPROVAL: 0,
-    CONVERSION: 0,
+    LEAD_CONFIRMED: 0,
+    DOCUMENTS_RECEIVED: 0,
+    BRANCH_PROCESSING: 0,
+    SANCTIONED: 0,
+    TO_RAC: 0,
+    APPROVED: 0,
+    DISBURSED: 0,
   };
 
   for (const lead of leads) {

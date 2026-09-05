@@ -65,25 +65,29 @@ single-keyword match would get backwards:
 
 - `"application bhejna abhi baaki hai"` — the application has explicitly
   **not** been sent yet. A naive match on the word "application" would
-  incorrectly report the `APPLICATION` stage. The extractor checks a
-  `bhejna...baaki` negation pattern **before** the generic `APPLICATION`
-  rule and correctly resolves this to `CONTACTED` (engaged, but not yet
-  applied).
+  incorrectly report the `BRANCH_PROCESSING` stage. The extractor checks
+  a `bhejna...baaki` negation pattern **before** the generic
+  `BRANCH_PROCESSING` rule and correctly resolves this to
+  `DOCUMENTS_RECEIVED` (documents in hand, but not yet submitted at the
+  branch).
 - `"abhi contact karna baaki hai"` — contact has explicitly **not**
   happened yet. A naive match on "contact" would incorrectly report
-  `CONTACTED`. The extractor checks a `contact...karna...baaki` negation
-  pattern before the generic `CONTACTED` rule and correctly resolves
-  this to `INTERESTED` (the pre-contact stage).
+  `LEAD_CONFIRMED`. The extractor checks a `contact...karna...baaki`
+  negation pattern before the generic `LEAD_CONFIRMED` rule; since
+  `LEAD_CONFIRMED` is the pipeline's first stage, there is no earlier
+  stage to fall back to, so this correctly resolves to no stage match at
+  all rather than guessing one.
 
 Both are unit-tested individually (`tests/unit/voiceExtraction.test.ts`,
-"the exact spec demo transcript" — items 104 and 105) precisely because
+"a seven-stage demo transcript" — items 104 and 105) precisely because
 they're the cases most likely to silently misfire.
 
-No new status values were invented. Every phrase in the dictionary maps
-onto the five existing `PipelineStage` values
-(`INTERESTED/CONTACTED/APPLICATION/APPROVAL/CONVERSION`) — the only
-canonical status this schema has (see `docs/PHASE3_4_SCOPE.md` and
-`docs/PHASE5_IMPLEMENTATION.md` for why `sourceLeadStatus` is a
+No new status values were invented beyond the pipeline's own 7-stage
+redesign. Every phrase in the dictionary maps onto one of the seven
+`PipelineStage` values
+(`LEAD_CONFIRMED/DOCUMENTS_RECEIVED/BRANCH_PROCESSING/SANCTIONED/TO_RAC/APPROVED/DISBURSED`)
+— the only canonical status this schema has (see `docs/PHASE3_4_SCOPE.md`
+and `docs/PHASE5_IMPLEMENTATION.md` for why `sourceLeadStatus` is a
 deliberately separate, non-canonical field).
 
 ### 4. The combined endpoint — and one disclosed departure from the literal spec
@@ -130,8 +134,8 @@ review-before-persistence rule.
     {
       "leadNumber": "101",
       "leadId": "clx...",
-      "previousStatus": "INTERESTED",
-      "proposedStatus": "APPROVAL",
+      "previousStatus": "LEAD_CONFIRMED",
+      "proposedStatus": "SANCTIONED",
       "proposalId": "clx...",
       "status": "pending_review"
     }

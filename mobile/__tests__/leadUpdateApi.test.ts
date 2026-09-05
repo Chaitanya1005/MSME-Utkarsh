@@ -19,10 +19,10 @@ describe('leadUpdateApi', () => {
       return Promise.resolve({ json: () => Promise.resolve({ success: true, data: { id: 'p1' } }) });
     });
 
-    await createManualProposal('lead1', 'CONTACTED', 'Called the customer');
+    await createManualProposal('lead1', 'BRANCH_PROCESSING', 'Called the customer');
 
     expect(capturedUrl).toContain('/bm/leads/lead1/proposals');
-    expect(JSON.parse(capturedBody!)).toEqual({ proposedStage: 'CONTACTED', remarks: 'Called the customer' });
+    expect(JSON.parse(capturedBody!)).toEqual({ proposedStage: 'BRANCH_PROCESSING', remarks: 'Called the customer' });
   });
 
   it('confirmProposalsBatch posts the id array to /bm/proposals/confirm-batch', async () => {
@@ -67,8 +67,8 @@ describe('voiceUpdateApi', () => {
       });
     });
 
-    const result = await extractFromTranscript('Sharma ji ka loan contacted ho gaya');
-    expect(JSON.parse(capturedBody!)).toEqual({ transcript: 'Sharma ji ka loan contacted ho gaya' });
+    const result = await extractFromTranscript('Sharma ji ka loan branch processing mein hai');
+    expect(JSON.parse(capturedBody!)).toEqual({ transcript: 'Sharma ji ka loan branch processing mein hai' });
     expect(result.sessionId).toBe('s1');
   });
 
@@ -82,10 +82,10 @@ describe('voiceUpdateApi', () => {
       return Promise.resolve({ json: () => Promise.resolve({ success: true, data: { created: 1, failed: [] } }) });
     });
 
-    await createProposalsFromSession('s1', [{ leadId: 'l1', proposedStage: 'CONTACTED', remarks: 'test' }]);
+    await createProposalsFromSession('s1', [{ leadId: 'l1', proposedStage: 'BRANCH_PROCESSING', remarks: 'test' }]);
     expect(capturedUrl).toContain('/bm/voice-updates/sessions/s1/proposals');
     expect(JSON.parse(capturedBody!)).toEqual({
-      items: [{ leadId: 'l1', proposedStage: 'CONTACTED', remarks: 'test' }],
+      items: [{ leadId: 'l1', proposedStage: 'BRANCH_PROCESSING', remarks: 'test' }],
     });
   });
 });

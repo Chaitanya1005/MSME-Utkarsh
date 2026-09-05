@@ -23,12 +23,26 @@ import { BMStackParamList } from '../../navigation/RootNavigator';
 type Props = NativeStackScreenProps<BMStackParamList, 'VoiceUpdate'>;
 
 const STAGES: PipelineStage[] = [
-  'INTERESTED',
-  'CONTACTED',
-  'APPLICATION',
-  'APPROVAL',
-  'CONVERSION',
+  'LEAD_CONFIRMED',
+  'DOCUMENTS_RECEIVED',
+  'BRANCH_PROCESSING',
+  'SANCTIONED',
+  'TO_RAC',
+  'APPROVED',
+  'DISBURSED',
 ];
+
+// Raw enum values (e.g. "DOCUMENTS_RECEIVED", "TO_RAC") read poorly as chip
+// text, so map each stage to a human-readable label for display.
+const STAGE_LABELS: Record<PipelineStage, string> = {
+  LEAD_CONFIRMED: 'Lead Confirmed',
+  DOCUMENTS_RECEIVED: 'Documents Received',
+  BRANCH_PROCESSING: 'Branch Processing',
+  SANCTIONED: 'Sanctioned',
+  TO_RAC: 'To RAC',
+  APPROVED: 'Approved',
+  DISBURSED: 'Disbursed',
+};
 
 interface ResolvedCandidate {
   index: number;
@@ -440,10 +454,11 @@ export function VoiceUpdateScreen({ navigation }: Props) {
             </View>
 
             <Text style={styles.scriptText}>
-              “Lead 101 interested hai. Lead 102 ko contact
-              kar liya hai. Lead 103 ki application bhej di hai.
-              Lead 104 approval mein hai. Lead 105 convert ho
-              gaya hai.”
+              “Lead 101 ka lead confirm ho gaya hai. Lead 102 ke
+              documents receive ho gaye hain. Lead 103 branch
+              processing mein hai. Lead 104 sanction ho gaya hai.
+              Lead 105 ko RAC bhej diya hai. Lead 106 approve ho
+              gaya hai. Lead 107 disburse ho gaya hai.”
             </Text>
 
             <View style={styles.scriptFooter}>
@@ -693,7 +708,7 @@ function CandidateCard({
                       styles.chipTextSelected,
                   ]}
                 >
-                  {stage}
+                  {STAGE_LABELS[stage]}
                 </Text>
               </TouchableOpacity>
             ))}

@@ -9,7 +9,27 @@ import { BMStackParamList } from '../../navigation/RootNavigator';
 
 type Props = NativeStackScreenProps<BMStackParamList, 'ProposeUpdate'>;
 
-const STAGES: PipelineStage[] = ['INTERESTED', 'CONTACTED', 'APPLICATION', 'APPROVAL', 'CONVERSION'];
+const STAGES: PipelineStage[] = [
+  'LEAD_CONFIRMED',
+  'DOCUMENTS_RECEIVED',
+  'BRANCH_PROCESSING',
+  'SANCTIONED',
+  'TO_RAC',
+  'APPROVED',
+  'DISBURSED',
+];
+
+// Raw enum values (e.g. "DOCUMENTS_RECEIVED") read poorly as UI text, so map
+// each stage to a human-readable label for display.
+const STAGE_LABELS: Record<PipelineStage, string> = {
+  LEAD_CONFIRMED: 'Lead Confirmed',
+  DOCUMENTS_RECEIVED: 'Documents Received',
+  BRANCH_PROCESSING: 'Branch Processing',
+  SANCTIONED: 'Sanctioned',
+  TO_RAC: 'To RAC',
+  APPROVED: 'Approved',
+  DISBURSED: 'Disbursed',
+};
 
 // Spec Phase 3 section 4.4 (review before persistence) + Phase 5 section 3
 // (no separate "Review Updates" detour): the BM still sees an explicit
@@ -46,10 +66,10 @@ export function ProposeUpdateScreen({ route, navigation }: Props) {
         <Text style={styles.title}>Review your proposed update</Text>
         <View style={styles.reviewCard}>
           <Text style={styles.reviewLine}>
-            Current stage: <Text style={styles.reviewValue}>{currentStage}</Text>
+            Current stage: <Text style={styles.reviewValue}>{STAGE_LABELS[currentStage] ?? currentStage}</Text>
           </Text>
           <Text style={styles.reviewLine}>
-            Proposed stage: <Text style={styles.reviewValue}>{proposedStage}</Text>
+            Proposed stage: <Text style={styles.reviewValue}>{STAGE_LABELS[proposedStage] ?? proposedStage}</Text>
           </Text>
           {remarks ? (
             <Text style={styles.reviewLine}>
@@ -83,7 +103,7 @@ export function ProposeUpdateScreen({ route, navigation }: Props) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Propose an update</Text>
-      <Text style={styles.sectionLabel}>Current stage: {currentStage}</Text>
+      <Text style={styles.sectionLabel}>Current stage: {STAGE_LABELS[currentStage] ?? currentStage}</Text>
 
       <Text style={styles.sectionLabel}>New stage</Text>
       <View style={styles.stageGrid}>
@@ -95,7 +115,7 @@ export function ProposeUpdateScreen({ route, navigation }: Props) {
             testID={`stage-option-${stage}`}
           >
             <Text style={[styles.stageOptionText, proposedStage === stage && styles.stageOptionTextSelected]}>
-              {stage}
+              {STAGE_LABELS[stage]}
             </Text>
           </TouchableOpacity>
         ))}

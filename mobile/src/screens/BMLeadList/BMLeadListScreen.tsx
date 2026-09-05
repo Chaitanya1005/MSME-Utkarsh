@@ -67,18 +67,26 @@ export function BMLeadListScreen({ navigation }: Props) {
 
   const leads = leadsQuery.data?.items ?? [];
 
- const contacted = leads.filter(
-  (lead) => lead.cbiPesStage === 'CONTACTED'
-).length;
-
-const inProgress = leads.filter(
+ // Early stage: lead has been confirmed and documents are being collected.
+ const documentation = leads.filter(
   (lead) =>
-    lead.cbiPesStage === 'INTERESTED' ||
-    lead.cbiPesStage === 'APPLICATION'
+    lead.cbiPesStage === 'LEAD_CONFIRMED' ||
+    lead.cbiPesStage === 'DOCUMENTS_RECEIVED'
 ).length;
 
-const approval = leads.filter(
-  (lead) => lead.cbiPesStage === 'APPROVAL'
+// Mid stage: file is actively moving through branch/underwriting/RAC processing.
+const processing = leads.filter(
+  (lead) =>
+    lead.cbiPesStage === 'BRANCH_PROCESSING' ||
+    lead.cbiPesStage === 'SANCTIONED' ||
+    lead.cbiPesStage === 'TO_RAC'
+).length;
+
+// Late stage: loan has been approved and/or paid out.
+const approved = leads.filter(
+  (lead) =>
+    lead.cbiPesStage === 'APPROVED' ||
+    lead.cbiPesStage === 'DISBURSED'
 ).length;
 
 const totalLeads = leads.length;
@@ -234,22 +242,22 @@ const totalLeads = leads.length;
         <View style={styles.statDivider} />
 
         <Stat
-          value={contacted}
-          label="Contacted"
+          value={documentation}
+          label="Documentation"
         />
 
         <View style={styles.statDivider} />
 
         <Stat
-          value={inProgress}
-          label="In Progress"
+          value={processing}
+          label="Processing"
         />
 
         <View style={styles.statDivider} />
 
         <Stat
-          value={approval}
-          label="Approval"
+          value={approved}
+          label="Approved"
         />
       </View>
 

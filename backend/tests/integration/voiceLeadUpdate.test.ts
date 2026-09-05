@@ -97,18 +97,18 @@ describe('Extraction + proposal creation, isolated from the transcription step',
     const extractRes = await request(app)
       .post('/api/bm/voice-updates/extract')
       .set('Authorization', `Bearer ${token}`)
-      .send({ transcript: `Lead ${fixtures.leadA101.sourceSrNo} ki application approve ho chuki hai` });
+      .send({ transcript: `Lead ${fixtures.leadA101.sourceSrNo} ka loan sanction ho gaya hai` });
 
     expect(extractRes.status).toBe(201);
     const candidate = extractRes.body.data.candidates[0];
     expect(candidate.matchedLeadId).toBe(fixtures.leadA101.id);
-    expect(candidate.proposedStage).toBe('APPROVAL');
+    expect(candidate.proposedStage).toBe('SANCTIONED');
 
     const sessionId = extractRes.body.data.sessionId;
     const proposalRes = await request(app)
       .post(`/api/bm/voice-updates/sessions/${sessionId}/proposals`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ items: [{ leadId: candidate.matchedLeadId, proposedStage: 'APPROVAL', remarks: candidate.remarks }] });
+      .send({ items: [{ leadId: candidate.matchedLeadId, proposedStage: 'SANCTIONED', remarks: candidate.remarks }] });
 
     expect(proposalRes.status).toBe(201);
     expect(proposalRes.body.data.created).toBe(1);
@@ -119,7 +119,7 @@ describe('Extraction + proposal creation, isolated from the transcription step',
     const extractRes = await request(app)
       .post('/api/bm/voice-updates/extract')
       .set('Authorization', `Bearer ${token}`)
-      .send({ transcript: `Lead ${fixtures.leadB101.sourceSrNo} ki application approve ho chuki hai` });
+      .send({ transcript: `Lead ${fixtures.leadB101.sourceSrNo} ka loan sanction ho gaya hai` });
 
     const candidate = extractRes.body.data.candidates[0];
     // leadB101 belongs to a different branch; the extraction pool passed

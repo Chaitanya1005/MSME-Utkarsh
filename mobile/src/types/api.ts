@@ -1,6 +1,13 @@
 export type Role = 'RM' | 'BM' | 'CO' | 'ZM';
 
-export type PipelineStage = 'INTERESTED' | 'CONTACTED' | 'APPLICATION' | 'APPROVAL' | 'CONVERSION';
+export type PipelineStage =
+  | 'LEAD_CONFIRMED'
+  | 'DOCUMENTS_RECEIVED'
+  | 'BRANCH_PROCESSING'
+  | 'SANCTIONED'
+  | 'TO_RAC'
+  | 'APPROVED'
+  | 'DISBURSED';
 
 export interface ApiSuccessBody<T> {
   success: true;

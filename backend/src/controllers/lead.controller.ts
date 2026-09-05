@@ -12,7 +12,14 @@ export const listLeadsHandler = asyncHandler(async (req: Request, res: Response)
     pageSize: number;
     branchId?: string;
     regionId?: string;
-    cbiPesStage?: 'INTERESTED' | 'CONTACTED' | 'APPLICATION' | 'APPROVAL' | 'CONVERSION';
+    cbiPesStage?:
+      | 'LEAD_CONFIRMED'
+      | 'DOCUMENTS_RECEIVED'
+      | 'BRANCH_PROCESSING'
+      | 'SANCTIONED'
+      | 'TO_RAC'
+      | 'APPROVED'
+      | 'DISBURSED';
   };
 
   const pagination = { page: query.page, pageSize: query.pageSize };

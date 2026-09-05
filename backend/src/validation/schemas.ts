@@ -25,7 +25,9 @@ export const listLeadsQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
   branchId: idParam.optional(),
   regionId: idParam.optional(),
-  cbiPesStage: z.enum(['INTERESTED', 'CONTACTED', 'APPLICATION', 'APPROVAL', 'CONVERSION']).optional(),
+  cbiPesStage: z
+    .enum(['LEAD_CONFIRMED', 'DOCUMENTS_RECEIVED', 'BRANCH_PROCESSING', 'SANCTIONED', 'TO_RAC', 'APPROVED', 'DISBURSED'])
+    .optional(),
 });
 
 // --- Phase 2: follow-up validation --------------------------------------
@@ -46,7 +48,15 @@ export const followUpAccessTokenParamSchema = z.object({
 
 // --- Phase 3/4: lead update proposals & voice extraction ----------------
 
-const pipelineStageEnum = z.enum(['INTERESTED', 'CONTACTED', 'APPLICATION', 'APPROVAL', 'CONVERSION']);
+const pipelineStageEnum = z.enum([
+  'LEAD_CONFIRMED',
+  'DOCUMENTS_RECEIVED',
+  'BRANCH_PROCESSING',
+  'SANCTIONED',
+  'TO_RAC',
+  'APPROVED',
+  'DISBURSED',
+]);
 
 export const createManualProposalSchema = z.object({
   proposedStage: pipelineStageEnum,

@@ -31,7 +31,7 @@ describe('POST /api/bm/leads/:leadId/proposals (manual)', () => {
     const res = await request(app)
       .post(`/api/bm/leads/${fixtures.leadA101.id}/proposals`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ proposedStage: 'CONTACTED', remarks: 'Called the customer' });
+      .send({ proposedStage: 'DOCUMENTS_RECEIVED', remarks: 'Called the customer' });
 
     expect(res.status).toBe(201);
     expect(res.body.data.status).toBe('PENDING');
@@ -43,10 +43,10 @@ describe('POST /api/bm/leads/:leadId/proposals (manual)', () => {
     await request(app)
       .post(`/api/bm/leads/${fixtures.leadA101.id}/proposals`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ proposedStage: 'CONVERSION' });
+      .send({ proposedStage: 'DISBURSED' });
 
     const leadRes = await request(app).get(`/api/leads/${fixtures.leadA101.id}`).set('Authorization', `Bearer ${token}`);
-    expect(leadRes.body.data.cbiPesStage).not.toBe('CONVERSION');
+    expect(leadRes.body.data.cbiPesStage).not.toBe('DISBURSED');
   });
 
   it('DENIED: a BM cannot propose an update for another branch\'s lead', async () => {
@@ -54,7 +54,7 @@ describe('POST /api/bm/leads/:leadId/proposals (manual)', () => {
     const res = await request(app)
       .post(`/api/bm/leads/${fixtures.leadB101.id}/proposals`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ proposedStage: 'CONTACTED' });
+      .send({ proposedStage: 'DOCUMENTS_RECEIVED' });
     expect(res.status).toBe(403);
   });
 
@@ -63,7 +63,7 @@ describe('POST /api/bm/leads/:leadId/proposals (manual)', () => {
     const res = await request(app)
       .post(`/api/bm/leads/${fixtures.leadA101.id}/proposals`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ proposedStage: 'CONTACTED' });
+      .send({ proposedStage: 'DOCUMENTS_RECEIVED' });
     expect(res.status).toBe(403);
   });
 
@@ -83,7 +83,7 @@ describe('POST /api/bm/proposals/:proposalId/confirm — the persistence step', 
     const createRes = await request(app)
       .post(`/api/bm/leads/${fixtures.leadA101.id}/proposals`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ proposedStage: 'APPROVAL', remarks: 'Docs verified' });
+      .send({ proposedStage: 'SANCTIONED', remarks: 'Docs verified' });
     const proposalId = createRes.body.data.id;
 
     const confirmRes = await request(app)
@@ -92,12 +92,12 @@ describe('POST /api/bm/proposals/:proposalId/confirm — the persistence step', 
     expect(confirmRes.status).toBe(200);
 
     const leadRes = await request(app).get(`/api/leads/${fixtures.leadA101.id}`).set('Authorization', `Bearer ${token}`);
-    expect(leadRes.body.data.cbiPesStage).toBe('APPROVAL');
+    expect(leadRes.body.data.cbiPesStage).toBe('SANCTIONED');
 
     const activityRes = await request(app)
       .get(`/api/bm/leads/${fixtures.leadA101.id}/activity`)
       .set('Authorization', `Bearer ${token}`);
-    expect(activityRes.body.data.some((a: { newStage: string }) => a.newStage === 'APPROVAL')).toBe(true);
+    expect(activityRes.body.data.some((a: { newStage: string }) => a.newStage === 'SANCTIONED')).toBe(true);
   });
 
   it('cannot confirm the same proposal twice', async () => {
@@ -105,7 +105,7 @@ describe('POST /api/bm/proposals/:proposalId/confirm — the persistence step', 
     const createRes = await request(app)
       .post(`/api/bm/leads/${fixtures.leadA101.id}/proposals`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ proposedStage: 'CONTACTED' });
+      .send({ proposedStage: 'DOCUMENTS_RECEIVED' });
     const proposalId = createRes.body.data.id;
 
     await request(app).post(`/api/bm/proposals/${proposalId}/confirm`).set('Authorization', `Bearer ${token}`);
@@ -120,7 +120,7 @@ describe('POST /api/bm/proposals/:proposalId/confirm — the persistence step', 
     const createRes = await request(app)
       .post(`/api/bm/leads/${fixtures.leadA101.id}/proposals`)
       .set('Authorization', `Bearer ${bmA101Token}`)
-      .send({ proposedStage: 'CONTACTED' });
+      .send({ proposedStage: 'DOCUMENTS_RECEIVED' });
     const proposalId = createRes.body.data.id;
 
     const bmB101Token = await loginAs('bm.b101');
@@ -137,7 +137,7 @@ describe('POST /api/bm/voice-updates/extract', () => {
     const res = await request(app)
       .post('/api/bm/voice-updates/extract')
       .set('Authorization', `Bearer ${token}`)
-      .send({ transcript: `${fixtures.leadA101.customerName} ka loan contacted ho gaya hai.` });
+      .send({ transcript: `${fixtures.leadA101.customerName} ka loan documents receive ho gaye hai.` });
 
     expect(res.status).toBe(201);
     expect(res.body.data.sessionId).toEqual(expect.any(String));
@@ -175,7 +175,7 @@ describe('POST /api/bm/voice-updates/sessions/:sessionId/proposals', () => {
     const res = await request(app)
       .post(`/api/bm/voice-updates/sessions/${sessionId}/proposals`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ items: [{ leadId: fixtures.leadA101.id, proposedStage: 'APPLICATION', remarks: 'from voice' }] });
+      .send({ items: [{ leadId: fixtures.leadA101.id, proposedStage: 'BRANCH_PROCESSING', remarks: 'from voice' }] });
 
     expect(res.status).toBe(201);
     expect(res.body.data.created).toBe(1);
@@ -200,7 +200,7 @@ describe('POST /api/bm/voice-updates/sessions/:sessionId/proposals', () => {
     const res = await request(app)
       .post(`/api/bm/voice-updates/sessions/${sessionId}/proposals`)
       .set('Authorization', `Bearer ${bmB101Token}`)
-      .send({ items: [{ leadId: fixtures.leadB101.id, proposedStage: 'CONTACTED' }] });
+      .send({ items: [{ leadId: fixtures.leadB101.id, proposedStage: 'DOCUMENTS_RECEIVED' }] });
     expect(res.status).toBe(403);
   });
 });
@@ -211,7 +211,7 @@ describe('GET /api/leads/:leadId/activity — shared between RM and BM (Phase 5)
     const createRes = await request(app)
       .post(`/api/bm/leads/${fixtures.leadA101.id}/proposals`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ proposedStage: 'CONTACTED' });
+      .send({ proposedStage: 'DOCUMENTS_RECEIVED' });
     await request(app)
       .post(`/api/bm/proposals/${createRes.body.data.id}/confirm`)
       .set('Authorization', `Bearer ${token}`);
@@ -254,7 +254,7 @@ describe('Manual update flow after Review Updates removal (Phase 5 section 3)', 
     const createRes = await request(app)
       .post(`/api/bm/leads/${fixtures.leadA101.id}/proposals`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ proposedStage: 'APPLICATION', remarks: 'Immediate confirm flow' });
+      .send({ proposedStage: 'BRANCH_PROCESSING', remarks: 'Immediate confirm flow' });
 
     const confirmRes = await request(app)
       .post(`/api/bm/proposals/${createRes.body.data.id}/confirm`)
@@ -264,7 +264,7 @@ describe('Manual update flow after Review Updates removal (Phase 5 section 3)', 
     const leadRes = await request(app)
       .get(`/api/leads/${fixtures.leadA101.id}`)
       .set('Authorization', `Bearer ${token}`);
-    expect(leadRes.body.data.cbiPesStage).toBe('APPLICATION');
+    expect(leadRes.body.data.cbiPesStage).toBe('BRANCH_PROCESSING');
 
     // The underlying proposal architecture itself is untouched — the
     // proposal exists and is CONFIRMED, it was just never left PENDING

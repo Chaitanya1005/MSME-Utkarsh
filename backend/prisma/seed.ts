@@ -153,7 +153,14 @@ async function main() {
     sourceLeadStatus: string;
     sourceCategorization: SourceCategorization;
     sourceStageProgress: SourceStageProgress;
-    cbiPesStage: 'INTERESTED' | 'CONTACTED' | 'APPLICATION' | 'APPROVAL' | 'CONVERSION';
+    cbiPesStage:
+      | 'LEAD_CONFIRMED'
+      | 'DOCUMENTS_RECEIVED'
+      | 'BRANCH_PROCESSING'
+      | 'SANCTIONED'
+      | 'TO_RAC'
+      | 'APPROVED'
+      | 'DISBURSED';
     branchId?: string;
     regionId?: string;
     updatedAt?: Date;
@@ -172,7 +179,7 @@ async function main() {
       sourceLeadStatus: 'Open',
       sourceCategorization: 'B',
       sourceStageProgress: 'UNDER_PROCESS',
-      cbiPesStage: 'INTERESTED',
+      cbiPesStage: 'LEAD_CONFIRMED',
       branchId: branchA101.id,
       updatedAt: daysAgo(1),
     },
@@ -185,7 +192,7 @@ async function main() {
       sourceLeadStatus: 'Open',
       sourceCategorization: 'A',
       sourceStageProgress: 'SANCTIONED',
-      cbiPesStage: 'CONTACTED',
+      cbiPesStage: 'DOCUMENTS_RECEIVED',
       branchId: branchA101.id,
       updatedAt: daysAgo(2),
     },
@@ -198,7 +205,7 @@ async function main() {
       sourceLeadStatus: 'Open',
       sourceCategorization: 'C',
       sourceStageProgress: 'UNDER_PROCESS',
-      cbiPesStage: 'APPLICATION',
+      cbiPesStage: 'BRANCH_PROCESSING',
       branchId: branchA101.id,
       updatedAt: daysAgo(1),
     },
@@ -211,7 +218,7 @@ async function main() {
       sourceLeadStatus: 'Open',
       sourceCategorization: 'B',
       sourceStageProgress: 'DOC_NOT_EXECUTED',
-      cbiPesStage: 'APPROVAL',
+      cbiPesStage: 'SANCTIONED',
       branchId: branchA101.id,
       updatedAt: daysAgo(3),
     },
@@ -226,7 +233,7 @@ async function main() {
       sourceLeadStatus: 'Open',
       sourceCategorization: 'B',
       sourceStageProgress: 'PENDING_AT_RAC',
-      cbiPesStage: 'CONTACTED',
+      cbiPesStage: 'TO_RAC',
       branchId: branchA102.id,
       updatedAt: daysAgo(21),
     },
@@ -239,7 +246,7 @@ async function main() {
       sourceLeadStatus: 'Open',
       sourceCategorization: 'C',
       sourceStageProgress: 'UNDER_PROCESS',
-      cbiPesStage: 'INTERESTED',
+      cbiPesStage: 'LEAD_CONFIRMED',
       branchId: branchA102.id,
       updatedAt: daysAgo(30),
     },
@@ -252,7 +259,7 @@ async function main() {
       sourceLeadStatus: 'Closed',
       sourceCategorization: 'D',
       sourceStageProgress: 'DOC_NOT_EXECUTED',
-      cbiPesStage: 'CONTACTED',
+      cbiPesStage: 'DOCUMENTS_RECEIVED',
       branchId: branchA102.id,
       updatedAt: daysAgo(45),
     },
@@ -266,7 +273,7 @@ async function main() {
       sourceLeadStatus: 'Open',
       sourceCategorization: 'B',
       sourceStageProgress: 'PENDING_AT_RAC',
-      cbiPesStage: 'APPLICATION',
+      cbiPesStage: 'BRANCH_PROCESSING',
       branchId: branchA201.id,
       updatedAt: daysAgo(4),
     },
@@ -279,7 +286,7 @@ async function main() {
       sourceLeadStatus: 'Open',
       sourceCategorization: 'A',
       sourceStageProgress: 'DISBURSED',
-      cbiPesStage: 'CONVERSION',
+      cbiPesStage: 'DISBURSED',
       branchId: branchA201.id,
       updatedAt: daysAgo(10),
     },
@@ -293,7 +300,7 @@ async function main() {
       sourceLeadStatus: 'Open',
       sourceCategorization: 'C',
       sourceStageProgress: 'UNDER_PROCESS',
-      cbiPesStage: 'INTERESTED',
+      cbiPesStage: 'APPROVED',
       branchId: branchB101.id,
       updatedAt: daysAgo(15),
     },
@@ -306,7 +313,7 @@ async function main() {
       sourceLeadStatus: 'Open',
       sourceCategorization: 'B',
       sourceStageProgress: 'SANCTIONED',
-      cbiPesStage: 'APPROVAL',
+      cbiPesStage: 'SANCTIONED',
       branchId: branchB101.id,
       updatedAt: daysAgo(18),
     },
@@ -322,7 +329,7 @@ async function main() {
       sourceLeadStatus: 'Open',
       sourceCategorization: 'C',
       sourceStageProgress: 'UNDER_PROCESS',
-      cbiPesStage: 'INTERESTED',
+      cbiPesStage: 'LEAD_CONFIRMED',
       regionId: regionA1.id,
       updatedAt: daysAgo(6),
     },
@@ -335,7 +342,7 @@ async function main() {
       sourceLeadStatus: 'Open',
       sourceCategorization: 'B',
       sourceStageProgress: 'PENDING_AT_RAC',
-      cbiPesStage: 'CONTACTED',
+      cbiPesStage: 'DOCUMENTS_RECEIVED',
       regionId: regionB1.id,
       updatedAt: daysAgo(12),
     },

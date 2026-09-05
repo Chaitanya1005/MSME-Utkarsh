@@ -110,7 +110,7 @@ model Lead {
   tentativeSanctionDate     DateTime?
   tentativeDisbursementDate DateTime?
   sourceRemarks             String?
-  cbiPesStage               PipelineStage        @default(INTERESTED)
+  cbiPesStage               PipelineStage        @default(LEAD_CONFIRMED)
   branchId                  String?
   regionId                  String?
   createdAt                 DateTime             @default(now())
@@ -135,11 +135,13 @@ enum Role {
 }
 
 enum PipelineStage {
-  INTERESTED
-  CONTACTED
-  APPLICATION
-  APPROVAL
-  CONVERSION
+  LEAD_CONFIRMED
+  DOCUMENTS_RECEIVED
+  BRANCH_PROCESSING
+  SANCTIONED
+  TO_RAC
+  APPROVED
+  DISBURSED
 }
 
 enum SourceCategorization {

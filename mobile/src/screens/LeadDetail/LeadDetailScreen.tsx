@@ -31,30 +31,43 @@ const STAGE_META: Record<
     label: string;
   }
 > = {
-  INTERESTED: {
+  // Progressive palette: cool blue/teal for the early paperwork stages,
+  // warm amber/orange while the file is actively being processed, and
+  // green shades for the final approved/disbursed outcomes.
+  LEAD_CONFIRMED: {
     color: '#0B5CAB',
     background: '#EAF2FB',
-    label: 'Interested',
+    label: 'Lead Confirmed',
   },
-  CONTACTED: {
+  DOCUMENTS_RECEIVED: {
+    color: '#0B7A96',
+    background: '#E7F5F9',
+    label: 'Documents Received',
+  },
+  BRANCH_PROCESSING: {
     color: '#B7791F',
     background: '#FFF6DF',
-    label: 'Contacted',
+    label: 'Branch Processing',
   },
-  APPLICATION: {
-    color: '#B7791F',
-    background: '#FFF6DF',
-    label: 'Application',
+  SANCTIONED: {
+    color: '#C2650F',
+    background: '#FFF0E1',
+    label: 'Sanctioned',
   },
-  APPROVAL: {
-    color: '#B7791F',
-    background: '#FFF6DF',
-    label: 'Approval',
+  TO_RAC: {
+    color: '#C1440E',
+    background: '#FFEEE6',
+    label: 'To RAC',
   },
-  CONVERSION: {
+  APPROVED: {
     color: '#16845A',
     background: '#EAF8F1',
-    label: 'Conversion',
+    label: 'Approved',
+  },
+  DISBURSED: {
+    color: '#0F6B46',
+    background: '#E3F5EC',
+    label: 'Disbursed',
   },
 };
 

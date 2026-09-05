@@ -8,7 +8,14 @@ export type Role = 'RM' | 'BM' | 'CO' | 'ZM';
 // Same rationale, mirroring the Prisma `PipelineStage` enum — used by
 // src/services/voiceExtraction.ts so its unit tests don't require a
 // generated Prisma Client either.
-export type PipelineStage = 'INTERESTED' | 'CONTACTED' | 'APPLICATION' | 'APPROVAL' | 'CONVERSION';
+export type PipelineStage =
+  | 'LEAD_CONFIRMED'
+  | 'DOCUMENTS_RECEIVED'
+  | 'BRANCH_PROCESSING'
+  | 'SANCTIONED'
+  | 'TO_RAC'
+  | 'APPROVED'
+  | 'DISBURSED';
 
 // The subset of a User's identity that goes into the JWT payload and is
 // used throughout request handling. Kept intentionally small — never put

@@ -9,18 +9,26 @@
 
 import { PipelineStage } from '../../types/domain';
 
-const STAGE_ORDER: PipelineStage[] = ['INTERESTED', 'CONTACTED', 'APPLICATION', 'APPROVAL', 'CONVERSION'];
+const STAGE_ORDER: PipelineStage[] = [
+  'LEAD_CONFIRMED',
+  'DOCUMENTS_RECEIVED',
+  'BRANCH_PROCESSING',
+  'SANCTIONED',
+  'TO_RAC',
+  'APPROVED',
+  'DISBURSED',
+];
 
 export type ProgressionResult =
   | { safe: true }
   | { safe: false; reason: 'BACKWARD_TRANSITION'; currentStage: PipelineStage; proposedStage: PipelineStage };
 
 // Forward and same-stage transitions are always safe. A backward
-// transition (spec examples: current APPLICATION, voice says
-// INTERESTED; current CONVERSION, voice says CONTACTED) is flagged for
-// the existing review workflow rather than silently applied — the BM
-// still sees it on the review screen, but it is never auto-created as a
-// plain, unremarkable PENDING proposal.
+// transition (e.g. current BRANCH_PROCESSING, voice says LEAD_CONFIRMED;
+// current DISBURSED, voice says DOCUMENTS_RECEIVED) is flagged for the
+// existing review workflow rather than silently applied — the BM still
+// sees it on the review screen, but it is never auto-created as a plain,
+// unremarkable PENDING proposal.
 export function validateProgression(currentStage: PipelineStage, proposedStage: PipelineStage): ProgressionResult {
   const currentIndex = STAGE_ORDER.indexOf(currentStage);
   const proposedIndex = STAGE_ORDER.indexOf(proposedStage);

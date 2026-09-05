@@ -74,7 +74,7 @@ identically to the organization endpoints above.
   - `page` (default 1), `pageSize` (default 20, max 100)
   - `branchId` (optional) — must be within caller's scope or `403`
   - `regionId` (optional) — must be within caller's scope or `403`
-  - `cbiPesStage` (optional) — one of `INTERESTED|CONTACTED|APPLICATION|APPROVAL|CONVERSION`
+  - `cbiPesStage` (optional) — one of `LEAD_CONFIRMED|DOCUMENTS_RECEIVED|BRANCH_PROCESSING|SANCTIONED|TO_RAC|APPROVED|DISBURSED`
 - **Behavior:** Returns only leads within the caller's authorized scope. For an RM this means every lead under any branch in their region, plus any lead assigned directly to their region. For a BM this means only leads belonging to their branch. Filters can only narrow the result further — they can never be used to see outside the caller's scope.
 - **Success (200):** `{ items: Lead[], page, pageSize, total, totalPages }`
 
@@ -97,7 +97,7 @@ identically to the organization endpoints above.
   "tentativeSanctionDate": null,
   "tentativeDisbursementDate": null,
   "sourceRemarks": null,
-  "cbiPesStage": "CONTACTED",          // INTERESTED | CONTACTED | APPLICATION | APPROVAL | CONVERSION
+  "cbiPesStage": "DOCUMENTS_RECEIVED", // LEAD_CONFIRMED | DOCUMENTS_RECEIVED | BRANCH_PROCESSING | SANCTIONED | TO_RAC | APPROVED | DISBURSED
   "branchId": "clx...",
   "regionId": null,
   "createdAt": "2026-08-16T00:00:00.000Z",
@@ -145,7 +145,7 @@ Phase 1 endpoints above are unchanged.
       "id": "...", "name": "Branch A101",
       "bm": { "id": "...", "name": "Sanjay Rao" },
       "totalLeads": 4,
-      "leadsByStage": { "INTERESTED": 1, "CONTACTED": 1, "APPLICATION": 0, "APPROVAL": 1, "CONVERSION": 1 },
+      "leadsByStage": { "LEAD_CONFIRMED": 1, "DOCUMENTS_RECEIVED": 1, "BRANCH_PROCESSING": 0, "SANCTIONED": 1, "TO_RAC": 0, "APPROVED": 0, "DISBURSED": 1 },
       "lastLeadUpdateAt": "2026-08-15T10:00:00.000Z",
       "latestFollowUp": { "channel": "EMAIL", "sentAt": "2026-08-16T09:00:00.000Z", "status": "SENT" },
       "updateStatus": "RECENTLY_UPDATED"

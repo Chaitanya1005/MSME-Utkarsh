@@ -8,9 +8,10 @@
   listing/detail, all backed by PostgreSQL via Prisma.
 - Hierarchical data model: Central Office → Zone → Region → Branch →
   Lead, with region-level leads supported.
-- MSME Utkarsh's own five-stage pipeline (`INTERESTED → CONTACTED →
-  APPLICATION → APPROVAL → CONVERSION`) as a field on `Lead`, kept
-  structurally separate from source/LMS status fields.
+- MSME Utkarsh's own seven-stage pipeline (`LEAD_CONFIRMED →
+  DOCUMENTS_RECEIVED → BRANCH_PROCESSING → SANCTIONED → TO_RAC →
+  APPROVED → DISBURSED`) as a field on `Lead`, kept structurally
+  separate from source/LMS status fields.
 - Username + password authentication, bcrypt password hashing, JWT
   sessions.
 - Server-side authorization enforced by role AND organizational scope,

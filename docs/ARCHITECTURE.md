@@ -88,9 +88,9 @@ never auto-derives one from the other (spec sections 16–20):
 | LMS status text | `sourceLeadStatus` | Source/LMS |
 | Doc-completeness categorization (A–D) | `sourceCategorization` | Source/LMS |
 | LMS pipeline progress | `sourceStageProgress` | Source/LMS |
-| MSME Utkarsh's own 5-stage pipeline | `cbiPesStage` | MSME Utkarsh |
+| MSME Utkarsh's own 7-stage pipeline | `cbiPesStage` | MSME Utkarsh |
 
-`cbiPesStage` defaults to `INTERESTED` for any newly created lead and is
+`cbiPesStage` defaults to `LEAD_CONFIRMED` for any newly created lead and is
 never computed from the source fields by any Phase 1 code path. The only
 place source values and a `cbiPesStage` appear together is
 `prisma/seed.ts`, where the pairing is explicitly documented as an
