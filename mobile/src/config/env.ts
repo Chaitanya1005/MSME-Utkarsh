@@ -16,7 +16,7 @@
 // This value intentionally has no secrets in it — never put backend
 // secrets (JWT_SECRET, DB credentials) in the mobile bundle (spec
 // section 46).
-const ANDROID_EMULATOR_HOST = '172.25.237.1';
+const ANDROID_EMULATOR_HOST = '192.168.1.39';
 const BACKEND_PORT = 4000;
 
 // Replace this with your development machine's LAN IP when testing on a

@@ -1,0 +1,4 @@
+# ninja log v5
+2	328	8101743871663406	CMakeFiles/foo.dir/foo.cpp.o	fcd35fa5c53f41eb
+32	371	8101743871966109	CMakeFiles/boo.dir/main.cpp.o	ad4a06449cc8c0ca
+331	4973	8101743900964763	libfoo.a	5a9027393b905524

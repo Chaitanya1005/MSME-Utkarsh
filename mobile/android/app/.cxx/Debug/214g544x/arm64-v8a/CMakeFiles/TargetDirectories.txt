@@ -1,0 +1,12 @@
+D:/helloworld/CBI-PES/CBI-PES-VoiceLeadUpdate/CBI-PES/mobile/android/app/.cxx/Debug/214g544x/arm64-v8a/CMakeFiles/appmodules.dir
+D:/helloworld/CBI-PES/CBI-PES-VoiceLeadUpdate/CBI-PES/mobile/android/app/.cxx/Debug/214g544x/arm64-v8a/CMakeFiles/edit_cache.dir
+D:/helloworld/CBI-PES/CBI-PES-VoiceLeadUpdate/CBI-PES/mobile/android/app/.cxx/Debug/214g544x/arm64-v8a/CMakeFiles/rebuild_cache.dir
+D:/helloworld/CBI-PES/CBI-PES-VoiceLeadUpdate/CBI-PES/mobile/android/app/.cxx/Debug/214g544x/arm64-v8a/rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir
+D:/helloworld/CBI-PES/CBI-PES-VoiceLeadUpdate/CBI-PES/mobile/android/app/.cxx/Debug/214g544x/arm64-v8a/rnasyncstorage_autolinked_build/CMakeFiles/edit_cache.dir
+D:/helloworld/CBI-PES/CBI-PES-VoiceLeadUpdate/CBI-PES/mobile/android/app/.cxx/Debug/214g544x/arm64-v8a/rnasyncstorage_autolinked_build/CMakeFiles/rebuild_cache.dir
+D:/helloworld/CBI-PES/CBI-PES-VoiceLeadUpdate/CBI-PES/mobile/android/app/.cxx/Debug/214g544x/arm64-v8a/safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir
+D:/helloworld/CBI-PES/CBI-PES-VoiceLeadUpdate/CBI-PES/mobile/android/app/.cxx/Debug/214g544x/arm64-v8a/safeareacontext_autolinked_build/CMakeFiles/edit_cache.dir
+D:/helloworld/CBI-PES/CBI-PES-VoiceLeadUpdate/CBI-PES/mobile/android/app/.cxx/Debug/214g544x/arm64-v8a/safeareacontext_autolinked_build/CMakeFiles/rebuild_cache.dir
+D:/helloworld/CBI-PES/CBI-PES-VoiceLeadUpdate/CBI-PES/mobile/android/app/.cxx/Debug/214g544x/arm64-v8a/rnscreens_autolinked_build/CMakeFiles/react_codegen_rnscreens.dir
+D:/helloworld/CBI-PES/CBI-PES-VoiceLeadUpdate/CBI-PES/mobile/android/app/.cxx/Debug/214g544x/arm64-v8a/rnscreens_autolinked_build/CMakeFiles/edit_cache.dir
+D:/helloworld/CBI-PES/CBI-PES-VoiceLeadUpdate/CBI-PES/mobile/android/app/.cxx/Debug/214g544x/arm64-v8a/rnscreens_autolinked_build/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,9 @@
+# ninja log v5
+24	632	0	D:/helloworld/CBI-PES/CBI-PES-VoiceLeadUpdate/CBI-PES/mobile/android/app/.cxx/Debug/214g544x/arm64-v8a/CMakeFiles/cmake.verify_globs	679a590d35ff97eb
+71	41517	8101744455920114	rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/react/renderer/components/rnasyncstorage/EventEmitters.cpp.o	1c2e238ed79bdd0f
+118	41730	8101744455940089	rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/react/renderer/components/rnasyncstorage/States.cpp.o	aae3a8768987e09b
+359	46789	8101744507652443	rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/29c6ac0a1dd6ebb9204efeee5b088e58/rnasyncstorageJSI-generated.cpp.o	a1e3356699bc14b0
+284	46869	8101744509363719	rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/rnasyncstorage-generated.cpp.o	acc7b5fae9f382a9
+239	51126	8101744551431763	rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/react/renderer/components/rnasyncstorage/ShadowNodes.cpp.o	a024b094b577b042
+95	51458	8101744555794443	rnasyncstorage_autolinked_build/CMakeFiles/react_codegen_rnasyncstorage.dir/react/renderer/components/rnasyncstorage/ComponentDescriptors.cpp.o	b9c11bcdc15f6dee
+44	56625	8101744606993628	CMakeFiles/appmodules.dir/OnLoad.cpp.o	a736f1ddc9ae01fa
