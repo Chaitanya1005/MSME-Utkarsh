@@ -22,7 +22,7 @@ export function buildFollowUpMessage(input: MessageTemplateInput): string {
     STANDARD_MESSAGE_HEADER,
     '',
     `Branch: ${input.branchName} (${input.regionName})`,
-    `Requested by: ${input.rmName}, Regional Head`,
+    `Requested by: Regional Head`,
     '',
     'Please review and update your branch\'s lead pipeline at your earliest convenience.',
   ];

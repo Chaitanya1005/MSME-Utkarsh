@@ -440,9 +440,9 @@ export function VoiceUpdateScreen({ navigation }: Props) {
             </View>
 
             <Text style={styles.scriptText}>
-              “Lead 1001 interested hai. Lead 1002 ko contact
-              kar liya hai. Lead 1003 ki application bhej di hai.
-              Lead 1004 approval mein hai. Lead 1005 convert ho
+              “Lead 101 interested hai. Lead 102 ko contact
+              kar liya hai. Lead 103 ki application bhej di hai.
+              Lead 104 approval mein hai. Lead 105 convert ho
               gaya hai.”
             </Text>
 
