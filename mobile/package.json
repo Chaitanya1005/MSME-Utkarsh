@@ -27,6 +27,8 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@react-native-community/cli": "^20.2.0",
+    "@react-native/metro-config": "0.81.5",
     "@babel/preset-env": "^7.25.4",
     "@babel/runtime": "^7.25.6",
     "@expo/ngrok": "^4.1.0",
