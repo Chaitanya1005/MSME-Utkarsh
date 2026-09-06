@@ -58,7 +58,7 @@ describe('POST /api/rm/follow-ups', () => {
     const res = await request(app)
       .post('/api/rm/follow-ups')
       .set('Authorization', `Bearer ${token}`)
-      .send({ branchIds: [fixtures.branchA101.id], channel: 'WHATSAPP' });
+      .send({ recipientUserIds: [fixtures.bmA101.id], channel: 'WHATSAPP' });
 
     expect(res.status).toBe(201);
     expect(res.body.data.targets).toHaveLength(1);
@@ -71,7 +71,7 @@ describe('POST /api/rm/follow-ups', () => {
     const res = await request(app)
       .post('/api/rm/follow-ups')
       .set('Authorization', `Bearer ${token}`)
-      .send({ branchIds: [fixtures.branchA101.id], channel: 'EMAIL' });
+      .send({ recipientUserIds: [fixtures.bmA101.id], channel: 'EMAIL' });
 
     expect(res.status).toBe(201);
     expect(res.body.data.targets[0].status).toBe('SENT');
@@ -82,7 +82,7 @@ describe('POST /api/rm/follow-ups', () => {
     const res = await request(app)
       .post('/api/rm/follow-ups')
       .set('Authorization', `Bearer ${token}`)
-      .send({ branchIds: [fixtures.branchA102.id], channel: 'WHATSAPP' });
+      .send({ recipientUserIds: [fixtures.bmA102.id], channel: 'WHATSAPP' });
 
     expect(res.status).toBe(201);
     expect(res.body.data.targets[0].status).toBe('FAILED');
@@ -94,7 +94,7 @@ describe('POST /api/rm/follow-ups', () => {
     const res = await request(app)
       .post('/api/rm/follow-ups')
       .set('Authorization', `Bearer ${token}`)
-      .send({ branchIds: [fixtures.branchB101.id], channel: 'EMAIL' });
+      .send({ recipientUserIds: [fixtures.bmB101.id], channel: 'EMAIL' });
 
     expect(res.status).toBe(403);
   });
@@ -104,7 +104,7 @@ describe('POST /api/rm/follow-ups', () => {
     const res = await request(app)
       .post('/api/rm/follow-ups')
       .set('Authorization', `Bearer ${token}`)
-      .send({ branchIds: [fixtures.branchA101.id, fixtures.branchB101.id], channel: 'EMAIL' });
+      .send({ recipientUserIds: [fixtures.bmA101.id, fixtures.bmB101.id], channel: 'EMAIL' });
 
     expect(res.status).toBe(403);
   });
@@ -114,7 +114,7 @@ describe('POST /api/rm/follow-ups', () => {
     const res = await request(app)
       .post('/api/rm/follow-ups')
       .set('Authorization', `Bearer ${token}`)
-      .send({ branchIds: [fixtures.branchA101.id], channel: 'EMAIL' });
+      .send({ recipientUserIds: [fixtures.bmA101.id], channel: 'EMAIL' });
     expect(res.status).toBe(403);
   });
 
@@ -123,7 +123,7 @@ describe('POST /api/rm/follow-ups', () => {
     const res = await request(app)
       .post('/api/rm/follow-ups')
       .set('Authorization', `Bearer ${token}`)
-      .send({ branchIds: [], channel: 'EMAIL' });
+      .send({ recipientUserIds: [], channel: 'EMAIL' });
     expect(res.status).toBe(400);
   });
 
@@ -132,7 +132,7 @@ describe('POST /api/rm/follow-ups', () => {
     const res = await request(app)
       .post('/api/rm/follow-ups')
       .set('Authorization', `Bearer ${token}`)
-      .send({ branchIds: [fixtures.branchA101.id], channel: 'SMS' });
+      .send({ recipientUserIds: [fixtures.bmA101.id], channel: 'SMS' });
     expect(res.status).toBe(400);
   });
 });
@@ -143,7 +143,7 @@ describe('GET /api/follow-up-access/:token — secure BM handoff', () => {
     const createRes = await request(app)
       .post('/api/rm/follow-ups')
       .set('Authorization', `Bearer ${rmToken}`)
-      .send({ branchIds: [fixtures.branchA101.id], channel: 'WHATSAPP' });
+      .send({ recipientUserIds: [fixtures.bmA101.id], channel: 'WHATSAPP' });
 
     const deepLink: string = createRes.body.data.targets[0].whatsAppDeepLinkUrl;
     // The deep link contains the message (URL-encoded), which contains the
@@ -157,7 +157,8 @@ describe('GET /api/follow-up-access/:token — secure BM handoff', () => {
     const accessRes = await request(app).get(`/api/follow-up-access/${rawToken}`);
     expect(accessRes.status).toBe(200);
     expect(accessRes.body.data.user.role).toBe('BM');
-    expect(accessRes.body.data.user.branch.id).toBe(fixtures.branchA101.id);
+    expect(accessRes.body.data.user.branchId).toBe(fixtures.branchA101.id);
+    expect(accessRes.body.data.user.orgUnitLabel).toBe('Branch Branch A101');
     expect(accessRes.body.data.token).toEqual(expect.any(String));
   });
 
@@ -172,7 +173,7 @@ describe('GET /api/follow-up-access/:token — secure BM handoff', () => {
     const res = await request(app)
       .post('/api/rm/follow-ups')
       .set('Authorization', `Bearer ${token}`)
-      .send({ branchIds: [fixtures.branchA101.id], channel: 'WHATSAPP' });
+      .send({ recipientUserIds: [fixtures.bmA101.id], channel: 'WHATSAPP' });
     const text = JSON.stringify(res.body);
     expect(text).not.toMatch(/eyJ[A-Za-z0-9_-]{10,}\./); // JWT-shaped substring
     expect(text).not.toMatch(TEST_PASSWORD);
@@ -194,9 +195,9 @@ describe('POST /api/rm/follow-ups/targets/:targetId/confirm-sent', () => {
     const res = await request(app)
       .post('/api/rm/follow-ups')
       .set('Authorization', `Bearer ${token}`)
-      .send({ branchIds: [fixtures.branchA101.id], channel: 'WHATSAPP' });
+      .send({ recipientUserIds: [fixtures.bmA101.id], channel: 'WHATSAPP' });
     expect(res.status).toBe(201);
-    return res.body.data.targets[0] as { id: string; branchId: string; status: string };
+    return res.body.data.targets[0] as { id: string; recipientUserId: string; status: string };
   }
 
   it('returns a usable target id on creation (the mobile app needs it to confirm)', async () => {

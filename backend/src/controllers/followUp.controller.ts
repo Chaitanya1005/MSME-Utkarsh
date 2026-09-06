@@ -5,9 +5,15 @@ import * as followUpService from '../services/followUp.service';
 import { AuthenticationError } from '../utils/AppError';
 import { FollowUpChannel } from '@prisma/client';
 
+export const listFollowUpCandidatesHandler = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw new AuthenticationError();
+  const candidates = await followUpService.listFollowUpCandidates(req.user);
+  sendSuccess(res, candidates);
+});
+
 export const createFollowUpHandler = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new AuthenticationError();
-  const body = req.body as { branchIds: string[]; channel: FollowUpChannel; customNote?: string };
+  const body = req.body as { recipientUserIds: string[]; channel: FollowUpChannel; customNote?: string };
   const result = await followUpService.createFollowUp(req.user, body);
   sendSuccess(res, result, 201);
 });

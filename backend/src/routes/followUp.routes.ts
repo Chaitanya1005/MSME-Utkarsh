@@ -3,6 +3,7 @@ import {
   createFollowUpHandler,
   listMyFollowUpsHandler,
   confirmWhatsAppSentHandler,
+  listFollowUpCandidatesHandler,
 } from '../controllers/followUp.controller';
 import { authenticate } from '../middleware/authenticate';
 import { requireRole } from '../middleware/requireRole';
@@ -12,8 +13,9 @@ import { createFollowUpSchema, followUpTargetIdParamSchema } from '../validation
 const router = Router();
 
 router.use(authenticate);
-router.use(requireRole('RM'));
+router.use(requireRole('RM', 'ZM', 'CO'));
 
+router.get('/candidates', listFollowUpCandidatesHandler);
 router.post('/', validate({ body: createFollowUpSchema }), createFollowUpHandler);
 router.get('/', listMyFollowUpsHandler);
 router.post(

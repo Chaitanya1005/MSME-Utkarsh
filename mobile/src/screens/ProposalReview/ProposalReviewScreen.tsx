@@ -1,21 +1,10 @@
 import React, { useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchMyBranchProposals, confirmProposalsBatch, rejectProposal } from '../../api/leadUpdateApi';
+import { fetchMyPendingProposals, confirmProposalsBatch, rejectProposal } from '../../api/leadUpdateApi';
 import { LoadingState, EmptyState, ErrorState } from '../../components/StatusStates';
-import { LeadUpdateProposal, PipelineStage } from '../../types/api';
-
-// Raw enum values (e.g. "DOCUMENTS_RECEIVED") read poorly next to each
-// other in a "previous -> proposed" line, so map to short display labels.
-const STAGE_LABELS: Record<PipelineStage, string> = {
-  LEAD_CONFIRMED: 'Lead Confirmed',
-  DOCUMENTS_RECEIVED: 'Documents Received',
-  BRANCH_PROCESSING: 'Branch Processing',
-  SANCTIONED: 'Sanctioned',
-  TO_RAC: 'To RAC',
-  APPROVED: 'Approved',
-  DISBURSED: 'Disbursed',
-};
+import { LeadUpdateProposal } from '../../types/api';
+import { STAGE_LABELS } from '../../constants/pipelineStages';
 
 // The single confirmation screen for BOTH manual and voice-sourced
 // proposals (spec section 5's unified pipeline, section 14's AI review
@@ -29,7 +18,7 @@ export function ProposalReviewScreen() {
 
   const proposalsQuery = useQuery({
     queryKey: ['proposals', 'my-branch', 'PENDING'],
-    queryFn: () => fetchMyBranchProposals('PENDING'),
+    queryFn: () => fetchMyPendingProposals('PENDING'),
   });
 
   const confirmMutation = useMutation({

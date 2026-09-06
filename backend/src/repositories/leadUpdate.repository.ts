@@ -4,7 +4,10 @@ import { prisma } from '../config/prisma';
 export function findLeadById(leadId: string) {
   return prisma.lead.findUnique({
     where: { id: leadId },
-    include: { branch: { select: { id: true, regionId: true, name: true } } },
+    include: {
+      branch: { select: { id: true, regionId: true, name: true, region: { select: { zoneId: true } } } },
+      region: { select: { zoneId: true } },
+    },
   });
 }
 
@@ -26,7 +29,14 @@ export function createProposal(input: CreateProposalInput) {
 export function findProposalById(proposalId: string) {
   return prisma.leadUpdateProposal.findUnique({
     where: { id: proposalId },
-    include: { lead: { include: { branch: true } } },
+    include: {
+      lead: {
+        include: {
+          branch: { select: { id: true, regionId: true, region: { select: { zoneId: true } } } },
+          region: { select: { zoneId: true } },
+        },
+      },
+    },
   });
 }
 
@@ -37,14 +47,20 @@ export function findProposalsForLead(leadId: string) {
   });
 }
 
-// Pending (or otherwise filtered) proposals across every lead in a branch —
-// used by the BM's "review updates" screen, which spans both manual and
-// voice-sourced proposals identically (spec section 5's unified model).
-export function findProposalsForBranch(branchId: string, status?: ProposalStatus) {
+// Pending (or otherwise filtered) proposals personally created by one
+// proposer, across every lead in their scope — used by the "review
+// updates" screen, which spans both manual and voice-sourced proposals
+// identically (spec section 5's unified model). Self-scoped rather than
+// branch-scoped so RM/ZM voice review only ever surfaces proposals they
+// themselves created (self-confirm-by-authority — see
+// leadUpdate.service.ts#listMyPendingProposals), and is backward
+// compatible for BM: a BM can only ever create proposals for their own
+// branch, so this returns the same rows `findProposalsForBranch` used to.
+export function findProposalsByProposer(proposedByUserId: string, status?: ProposalStatus) {
   return prisma.leadUpdateProposal.findMany({
     where: {
       status,
-      lead: { branchId },
+      proposedByUserId,
     },
     orderBy: { createdAt: 'desc' },
     include: { lead: { select: { id: true, customerName: true, subProductName: true } } },

@@ -58,10 +58,19 @@ describe('POST /api/bm/leads/:leadId/proposals (manual)', () => {
     expect(res.status).toBe(403);
   });
 
-  it('DENIED: an RM cannot propose lead updates at all', async () => {
+  it('ALLOWS an RM to propose an update for a lead within their own region (Full-Hierarchy Expansion)', async () => {
     const token = await loginAs('rm.a1');
     const res = await request(app)
       .post(`/api/bm/leads/${fixtures.leadA101.id}/proposals`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ proposedStage: 'DOCUMENTS_RECEIVED' });
+    expect(res.status).toBe(201);
+  });
+
+  it('DENIED: an RM cannot propose an update for a lead outside their own region', async () => {
+    const token = await loginAs('rm.a1');
+    const res = await request(app)
+      .post(`/api/bm/leads/${fixtures.leadB101.id}/proposals`)
       .set('Authorization', `Bearer ${token}`)
       .send({ proposedStage: 'DOCUMENTS_RECEIVED' });
     expect(res.status).toBe(403);
@@ -153,8 +162,17 @@ describe('POST /api/bm/voice-updates/extract', () => {
     expect(res.status).toBe(400);
   });
 
-  it('DENIED: an RM cannot submit a voice update', async () => {
+  it('ALLOWS an RM to submit a voice update for a lead within their own region', async () => {
     const token = await loginAs('rm.a1');
+    const res = await request(app)
+      .post('/api/bm/voice-updates/extract')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ transcript: `${fixtures.leadA101.customerName} ka loan documents receive ho gaye hai.` });
+    expect(res.status).toBe(201);
+  });
+
+  it('DENIED: a General Manager (CO) cannot submit a voice update', async () => {
+    const token = await loginAs('gm');
     const res = await request(app)
       .post('/api/bm/voice-updates/extract')
       .set('Authorization', `Bearer ${token}`)

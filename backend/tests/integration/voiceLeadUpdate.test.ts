@@ -66,8 +66,8 @@ describe('POST /api/bm/voice-updates/lead-update', () => {
     expect(res.status).toBe(400);
   });
 
-  it('DENIED: an RM cannot call this BM-only endpoint', async () => {
-    const token = await loginAs('rm.a1');
+  it('DENIED: a General Manager (CO) cannot call this endpoint — CO never submits voice updates', async () => {
+    const token = await loginAs('gm');
     const res = await request(app)
       .post('/api/bm/voice-updates/lead-update')
       .set('Authorization', `Bearer ${token}`)

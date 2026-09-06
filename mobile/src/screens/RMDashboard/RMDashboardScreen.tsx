@@ -220,9 +220,8 @@ export function RMDashboardScreen({ navigation }: Props) {
 
   function navigateToFollowUps() {
     closeDrawer();
-    navigation.navigate('FollowUp', {
-      branchIds: [],
-    });
+    // Nothing preselected — FollowUpScreen shows its own branch selector.
+    navigation.navigate('FollowUp', undefined);
   }
 
   function navigateToCalling() {

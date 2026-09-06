@@ -76,18 +76,22 @@ export async function findLeadsInScope(
   return { items, total };
 }
 
-// Returns the effective region id for a lead the exact same way
-// findLeadWithEffectiveRegion does for a single lead, so the
-// authorization layer never has to special-case "listing" vs "getting".
+// Returns the effective region/zone ids for a lead the exact same way
+// for every caller, so the authorization layer never has to
+// special-case "listing" vs "getting".
 export async function findLeadWithEffectiveRegion(leadId: string) {
   const lead = await prisma.lead.findUnique({
     where: { id: leadId },
-    include: { branch: { select: { regionId: true } } },
+    include: {
+      branch: { select: { regionId: true, region: { select: { zoneId: true } } } },
+      region: { select: { zoneId: true } },
+    },
   });
   if (!lead) return null;
 
   const effectiveRegionId = lead.regionId ?? lead.branch?.regionId ?? null;
-  return { lead, effectiveRegionId };
+  const effectiveZoneId = lead.region?.zoneId ?? lead.branch?.region.zoneId ?? null;
+  return { lead, effectiveRegionId, effectiveZoneId };
 }
 
 // --- Phase 2 additions: dashboard aggregation queries -----------------

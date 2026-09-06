@@ -9,7 +9,7 @@ describe('leadUpdateApi', () => {
     (global as any).fetch = undefined;
   });
 
-  it('createManualProposal posts to /bm/leads/:id/proposals with the stage and remarks', async () => {
+  it('createManualProposal posts to /lead-updates/leads/:id/proposals with the stage and remarks', async () => {
     let capturedUrl: string | undefined;
     let capturedBody: string | undefined;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -21,11 +21,11 @@ describe('leadUpdateApi', () => {
 
     await createManualProposal('lead1', 'BRANCH_PROCESSING', 'Called the customer');
 
-    expect(capturedUrl).toContain('/bm/leads/lead1/proposals');
+    expect(capturedUrl).toContain('/lead-updates/leads/lead1/proposals');
     expect(JSON.parse(capturedBody!)).toEqual({ proposedStage: 'BRANCH_PROCESSING', remarks: 'Called the customer' });
   });
 
-  it('confirmProposalsBatch posts the id array to /bm/proposals/confirm-batch', async () => {
+  it('confirmProposalsBatch posts the id array to /lead-updates/proposals/confirm-batch', async () => {
     let capturedBody: string | undefined;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (global as any).fetch = jest.fn((_url: string, init: RequestInit) => {
@@ -37,7 +37,7 @@ describe('leadUpdateApi', () => {
     expect(JSON.parse(capturedBody!)).toEqual({ proposalIds: ['p1', 'p2'] });
   });
 
-  it('rejectProposal posts to /bm/proposals/:id/reject', async () => {
+  it('rejectProposal posts to /lead-updates/proposals/:id/reject', async () => {
     let capturedUrl: string | undefined;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (global as any).fetch = jest.fn((url: string) => {
@@ -46,7 +46,7 @@ describe('leadUpdateApi', () => {
     });
 
     await rejectProposal('p1');
-    expect(capturedUrl).toContain('/bm/proposals/p1/reject');
+    expect(capturedUrl).toContain('/lead-updates/proposals/p1/reject');
   });
 });
 
@@ -57,7 +57,7 @@ describe('voiceUpdateApi', () => {
     (global as any).fetch = undefined;
   });
 
-  it('extractFromTranscript posts the transcript to /bm/voice-updates/extract', async () => {
+  it('extractFromTranscript posts the transcript to /voice-updates/extract', async () => {
     let capturedBody: string | undefined;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (global as any).fetch = jest.fn((_url: string, init: RequestInit) => {
@@ -72,7 +72,7 @@ describe('voiceUpdateApi', () => {
     expect(result.sessionId).toBe('s1');
   });
 
-  it('createProposalsFromSession posts items to /bm/voice-updates/sessions/:id/proposals', async () => {
+  it('createProposalsFromSession posts items to /voice-updates/sessions/:id/proposals', async () => {
     let capturedUrl: string | undefined;
     let capturedBody: string | undefined;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -83,7 +83,7 @@ describe('voiceUpdateApi', () => {
     });
 
     await createProposalsFromSession('s1', [{ leadId: 'l1', proposedStage: 'BRANCH_PROCESSING', remarks: 'test' }]);
-    expect(capturedUrl).toContain('/bm/voice-updates/sessions/s1/proposals');
+    expect(capturedUrl).toContain('/voice-updates/sessions/s1/proposals');
     expect(JSON.parse(capturedBody!)).toEqual({
       items: [{ leadId: 'l1', proposedStage: 'BRANCH_PROCESSING', remarks: 'test' }],
     });

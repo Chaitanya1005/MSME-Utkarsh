@@ -2,15 +2,34 @@
 // any screen or controller, so there is exactly one place that knows what
 // an approved MSME Utkarsh follow-up message looks like.
 
+import { Role } from '../types/domain';
+
+// Human-readable label for each role, used in both the "Requested by"
+// line and the closing "intended only for" line — generalized from a
+// hardcoded "Regional Head" so the same template serves every
+// sender/recipient pair in the hierarchy (Full-Hierarchy Expansion plan,
+// Phase 3).
+export const ROLE_LABELS: Record<Role, string> = {
+  RM: 'Regional Head',
+  ZM: 'Zonal Head',
+  CO: 'General Manager',
+  BM: 'Branch Head',
+};
+
 export interface MessageTemplateInput {
-  branchName: string;
-  regionName: string;
-  rmName: string;
+  // Precomputed by the caller from the recipient's org assignment —
+  // "Branch: X (Region Y)" / "Region: X (Zone Y)" / "Zone: X" — rather
+  // than baking branch/region-specific formatting into this function.
+  orgUnitLine: string;
+  senderName: string;
+  senderRole: Role;
+  recipientName: string;
+  recipientRole: Role;
   accessUrl: string;
-  // Optional RM customization, appended as a distinct, clearly-labeled
+  // Optional customization, appended as a distinct, clearly-labeled
   // section rather than allowed to overwrite the operational content
-  // (spec section 23: "support customization without allowing the RM to
-  // accidentally remove critical information").
+  // (spec section 23: "support customization without allowing the
+  // sender to accidentally remove critical information").
   customNote?: string;
 }
 
@@ -21,17 +40,22 @@ export function buildFollowUpMessage(input: MessageTemplateInput): string {
   const lines: string[] = [
     STANDARD_MESSAGE_HEADER,
     '',
-    `Branch: ${input.branchName} (${input.regionName})`,
-    `Requested by: Regional Head`,
+    input.orgUnitLine,
+    `Requested by: ${ROLE_LABELS[input.senderRole]} (${input.senderName})`,
     '',
-    'Please review and update your branch\'s lead pipeline at your earliest convenience.',
+    'Please review and update your lead pipeline at your earliest convenience.',
   ];
 
   if (input.customNote && input.customNote.trim().length > 0) {
-    lines.push('', `Note from RM: ${input.customNote.trim()}`);
+    lines.push('', `Note from ${ROLE_LABELS[input.senderRole]}: ${input.customNote.trim()}`);
   }
 
-  lines.push('', `Access your branch update link: ${input.accessUrl}`, '', 'This link is valid for a limited time and is intended only for the branch Head of the branch named above.');
+  lines.push(
+    '',
+    `Access your update link: ${input.accessUrl}`,
+    '',
+    `This link is valid for a limited time and is intended only for the ${ROLE_LABELS[input.recipientRole]} named above.`
+  );
 
   return lines.join('\n');
 }

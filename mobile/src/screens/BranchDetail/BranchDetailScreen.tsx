@@ -22,80 +22,9 @@ import {
 import { ApiError } from '../../api/client';
 import { Lead, PipelineStage } from '../../types/api';
 import { RMStackParamList } from '../../navigation/RootNavigator';
+import { STAGE_ORDER, STAGE_META } from '../../constants/pipelineStages';
 
 type Props = NativeStackScreenProps<RMStackParamList, 'BranchDetail'>;
-
-const STAGE_ORDER: PipelineStage[] = [
-  'LEAD_CONFIRMED',
-  'DOCUMENTS_RECEIVED',
-  'BRANCH_PROCESSING',
-  'SANCTIONED',
-  'TO_RAC',
-  'APPROVED',
-  'DISBURSED',
-];
-
-/*
- * Pipeline colour system:
- *
- * Lead Confirmed     -> Blue
- * Documents Received -> Yellow
- * Branch Processing  -> Yellow
- * Sanctioned         -> Yellow
- * To RAC             -> Yellow
- * Approved           -> Yellow
- * Disbursed          -> Green
- */
-const STAGE_META: Record<
-  PipelineStage,
-  {
-    short: string;
-    color: string;
-    background: string;
-  }
-> = {
-  LEAD_CONFIRMED: {
-    short: 'Lead Confirmed',
-    color: '#0B5CAB',
-    background: '#EAF2FB',
-  },
-
-  DOCUMENTS_RECEIVED: {
-    short: 'Documents Received',
-    color: '#B7791F',
-    background: '#FFF7E3',
-  },
-
-  BRANCH_PROCESSING: {
-    short: 'Branch Processing',
-    color: '#B7791F',
-    background: '#FFF7E3',
-  },
-
-  SANCTIONED: {
-    short: 'Sanctioned',
-    color: '#B7791F',
-    background: '#FFF7E3',
-  },
-
-  TO_RAC: {
-    short: 'To RAC',
-    color: '#B7791F',
-    background: '#FFF7E3',
-  },
-
-  APPROVED: {
-    short: 'Approved',
-    color: '#B7791F',
-    background: '#FFF7E3',
-  },
-
-  DISBURSED: {
-    short: 'Disbursed',
-    color: '#16845A',
-    background: '#ECF8F1',
-  },
-};
 
 export function BranchDetailScreen({
   route,

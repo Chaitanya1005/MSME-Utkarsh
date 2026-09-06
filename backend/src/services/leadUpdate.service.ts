@@ -4,14 +4,14 @@ import {
   createProposal,
   findProposalById,
   findProposalsForLead,
-  findProposalsForBranch,
+  findProposalsByProposer,
   confirmProposalTransaction,
   rejectProposalById,
   findActivityForLead,
 } from '../repositories/leadUpdate.repository';
 import { AuthTokenPayload } from '../types/domain';
 import { AppError, AuthorizationError, NotFoundError, ValidationError } from '../utils/AppError';
-import { canAccessLead } from './authorization';
+import { canAccessLead, LeadOwnership } from './authorization';
 
 const VALID_STAGES: PipelineStage[] = [
   'LEAD_CONFIRMED',
@@ -23,19 +23,31 @@ const VALID_STAGES: PipelineStage[] = [
   'DISBURSED',
 ];
 
+function ownershipOf(lead: {
+  branchId: string | null;
+  regionId: string | null;
+  branch: { regionId: string; region: { zoneId: string } } | null;
+  region: { zoneId: string } | null;
+}): LeadOwnership {
+  return {
+    branchId: lead.branchId,
+    effectiveRegionId: lead.regionId ?? lead.branch?.regionId ?? null,
+    effectiveZoneId: lead.region?.zoneId ?? lead.branch?.region.zoneId ?? null,
+  };
+}
+
 // The one and only place authorization is checked before touching a
-// lead's proposals — a BM may only ever act on leads belonging to their
-// own branch (spec section 17). Deliberately NOT reusing canAccessLead's
-// RM branch-level logic here: RMs have no Phase 3 write access at all,
-// so this is a stricter, BM-specific check rather than a generalization
-// of the read-side authorization function.
-async function assertBmOwnsLead(user: AuthTokenPayload, leadId: string) {
-  if (user.role !== 'BM' || !user.branchId) {
-    throw new AuthorizationError('Only a Branch Head may act on lead updates');
-  }
+// lead's proposals — generalized from a BM-only check to a direct reuse
+// of the read-side canAccessLead scope check (BM: own branch; RM: own
+// region; ZM: own zone; the exact generalization the original comment
+// here explicitly said not to do, because RM/ZM had no write access at
+// all — now they do, so the reuse is correct). GM never proposes updates
+// (canAccessLead's CO branch grants read access org-wide, but GM has no
+// route wired to this function at all — see routes).
+export async function assertCanProposeOnLead(user: AuthTokenPayload, leadId: string) {
   const lead = await findLeadById(leadId);
   if (!lead) throw new NotFoundError('Lead');
-  if (lead.branchId !== user.branchId) {
+  if (!canAccessLead(user, ownershipOf(lead))) {
     throw new AuthorizationError('You are not authorized to update this lead');
   }
   return lead;
@@ -44,16 +56,12 @@ async function assertBmOwnsLead(user: AuthTokenPayload, leadId: string) {
 // Read-only viewing (spec Phase 5 section 5: RM must be able to inspect
 // a lead the same way a BM can, without gaining BM-only write actions).
 // Reuses the exact same canAccessLead scope check the Phase 1 lead
-// endpoints use — an RM may view any lead in their region, a BM only
-// leads in their own branch — rather than introducing a second
-// authorization framework.
+// endpoints use — rather than introducing a second authorization
+// framework.
 async function assertCanViewLead(user: AuthTokenPayload, leadId: string) {
   const lead = await findLeadById(leadId);
   if (!lead) throw new NotFoundError('Lead');
-
-  const effectiveRegionId = lead.regionId ?? lead.branch?.regionId ?? null;
-  const allowed = canAccessLead(user, { branchId: lead.branchId, effectiveRegionId });
-  if (!allowed) {
+  if (!canAccessLead(user, ownershipOf(lead))) {
     throw new AuthorizationError('You are not authorized to view this lead');
   }
   return lead;
@@ -69,7 +77,7 @@ export async function createManualProposal(user: AuthTokenPayload, input: Create
   if (!VALID_STAGES.includes(input.proposedStage)) {
     throw new ValidationError('Invalid pipeline stage');
   }
-  const lead = await assertBmOwnsLead(user, input.leadId);
+  const lead = await assertCanProposeOnLead(user, input.leadId);
 
   return createProposal({
     leadId: lead.id,
@@ -82,7 +90,7 @@ export async function createManualProposal(user: AuthTokenPayload, input: Create
 }
 
 // Reused verbatim by the voice pipeline (voiceUpdate.service.ts) for
-// each candidate the BM accepts — this is the "same creation path"
+// each candidate the proposer accepts — this is the "same creation path"
 // spec section 5 requires; the only difference is source/voiceSessionId.
 export interface CreateProposalFromAnySourceInput {
   leadId: string;
@@ -100,7 +108,7 @@ export async function createProposalFromAnySource(
   if (!VALID_STAGES.includes(input.proposedStage)) {
     throw new ValidationError('Invalid pipeline stage');
   }
-  const lead = await assertBmOwnsLead(user, input.leadId);
+  const lead = await assertCanProposeOnLead(user, input.leadId);
 
   return createProposal({
     leadId: lead.id,
@@ -115,21 +123,36 @@ export async function createProposalFromAnySource(
 }
 
 export async function listProposalsForLead(user: AuthTokenPayload, leadId: string) {
-  await assertBmOwnsLead(user, leadId);
+  await assertCanProposeOnLead(user, leadId);
   return findProposalsForLead(leadId);
 }
 
-export async function listPendingProposalsForMyBranch(user: AuthTokenPayload, status?: ProposalStatus) {
-  if (user.role !== 'BM' || !user.branchId) {
-    throw new AuthorizationError('Only a Branch Head has a proposal review queue');
+// Self-confirm-by-authority (Full-Hierarchy Expansion plan, decision 2):
+// "proposals I personally created that are still pending" — not "all
+// pending in my branch/region/zone". This is the mechanism that makes
+// voice review self-scoped for RM/ZM, and is backward-compatible for BM
+// (a BM can only ever create proposals for their own branch anyway, so
+// this returns identical results to the old branch-scoped query for
+// existing BM users).
+export async function listMyPendingProposals(user: AuthTokenPayload, status?: ProposalStatus) {
+  if (!['BM', 'RM', 'ZM'].includes(user.role)) {
+    throw new AuthorizationError('This role has no proposal review queue');
   }
-  return findProposalsForBranch(user.branchId, status);
+  return findProposalsByProposer(user.userId, status);
 }
 
-async function assertBmOwnsProposal(user: AuthTokenPayload, proposalId: string) {
+async function assertCanActOnProposal(user: AuthTokenPayload, proposalId: string) {
   const proposal = await findProposalById(proposalId);
   if (!proposal) throw new NotFoundError('Proposal');
-  if (user.role !== 'BM' || proposal.lead.branchId !== user.branchId) {
+  if (!canAccessLead(user, ownershipOf(proposal.lead))) {
+    throw new AuthorizationError('You are not authorized to act on this proposal');
+  }
+  // Self-confirm-by-authority: a proposer confirms only their OWN
+  // proposal, never one someone else (even a subordinate in scope)
+  // created — e.g. an RM's voice update on a branch's lead is never
+  // routed to that branch's BM for approval, and equally a BM cannot
+  // confirm a proposal an RM created on a lead in the BM's own branch.
+  if (proposal.proposedByUserId !== user.userId) {
     throw new AuthorizationError('You are not authorized to act on this proposal');
   }
   if (proposal.status !== 'PENDING') {
@@ -144,7 +167,7 @@ async function assertBmOwnsProposal(user: AuthTokenPayload, proposalId: string) 
 // reaches PENDING status, its source is just a label, not a different
 // code path.
 export async function confirmProposal(user: AuthTokenPayload, proposalId: string) {
-  await assertBmOwnsProposal(user, proposalId);
+  await assertCanActOnProposal(user, proposalId);
   const result = await confirmProposalTransaction(proposalId);
   if (!result) throw new NotFoundError('Proposal');
   return result;
@@ -162,7 +185,7 @@ export async function confirmProposalsBatch(user: AuthTokenPayload, proposalIds:
     // handling, applied here to batch confirmation).
     // eslint-disable-next-line no-await-in-loop
     try {
-      await assertBmOwnsProposal(user, id);
+      await assertCanActOnProposal(user, id);
       // eslint-disable-next-line no-await-in-loop
       const result = await confirmProposalTransaction(id);
       results.push({ proposalId: id, success: true, result });
@@ -178,18 +201,18 @@ export async function confirmProposalsBatch(user: AuthTokenPayload, proposalIds:
 }
 
 export async function rejectProposal(user: AuthTokenPayload, proposalId: string) {
-  await assertBmOwnsProposal(user, proposalId);
+  await assertCanActOnProposal(user, proposalId);
   return rejectProposalById(proposalId);
 }
 
 export async function getLeadActivity(user: AuthTokenPayload, leadId: string) {
-  await assertBmOwnsLead(user, leadId);
+  await assertCanProposeOnLead(user, leadId);
   return findActivityForLead(leadId);
 }
 
-// The shared, view-only counterpart used by both roles (spec Phase 5
-// section 5) — RM's lead-detail screen and BM's lead-detail screen both
-// call this via the same GET /api/leads/:leadId/activity route.
+// The shared, view-only counterpart used by every role (spec Phase 5
+// section 5) — RM/ZM/CO's lead-detail screen and BM's lead-detail screen
+// all call this via the same GET /api/leads/:leadId/activity route.
 export async function getLeadActivityForViewer(user: AuthTokenPayload, leadId: string) {
   await assertCanViewLead(user, leadId);
   return findActivityForLead(leadId);

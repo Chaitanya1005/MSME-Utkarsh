@@ -8,7 +8,7 @@ describe('followUpApi', () => {
     (global as any).fetch = undefined;
   });
 
-  it('createFollowUp posts branchIds/channel/customNote to /rm/follow-ups', async () => {
+  it('createFollowUp posts recipientUserIds/channel/customNote to /follow-ups', async () => {
     let capturedUrl: string | undefined;
     let capturedBody: string | undefined;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -24,11 +24,11 @@ describe('followUpApi', () => {
       });
     });
 
-    await createFollowUp({ branchIds: ['b1', 'b2'], channel: 'EMAIL', customNote: 'hi' });
+    await createFollowUp({ recipientUserIds: ['u1', 'u2'], channel: 'EMAIL', customNote: 'hi' });
 
-    expect(capturedUrl).toContain('/rm/follow-ups');
+    expect(capturedUrl).toContain('/follow-ups');
     expect(JSON.parse(capturedBody!)).toEqual({
-      branchIds: ['b1', 'b2'],
+      recipientUserIds: ['u1', 'u2'],
       channel: 'EMAIL',
       customNote: 'hi',
     });
@@ -45,7 +45,14 @@ describe('followUpApi', () => {
             success: true,
             data: {
               token: 'session-jwt',
-              user: { id: 'u1', username: 'bm.a101', name: 'Test BM', role: 'BM', branch: { id: 'b1', name: 'Branch A101' } },
+              user: {
+                id: 'u1',
+                username: 'bm.a101',
+                name: 'Test BM',
+                role: 'BM',
+                branchId: 'b1',
+                orgUnitLabel: 'Branch Branch A101',
+              },
             },
           }),
       });
@@ -71,7 +78,7 @@ describe('followUpApi', () => {
 
     await confirmWhatsAppSent('t1');
 
-    expect(capturedUrl).toContain('/rm/follow-ups/targets/t1/confirm-sent');
+    expect(capturedUrl).toContain('/follow-ups/targets/t1/confirm-sent');
     expect(capturedMethod).toBe('POST');
   });
 });

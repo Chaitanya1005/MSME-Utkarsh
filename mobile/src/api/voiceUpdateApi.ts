@@ -8,14 +8,14 @@ import { VoiceExtractionResult, CreateProposalsFromSessionResult, PipelineStage 
 // know or care whether that text came from a real recording or, in the
 // future, some other transcript source.
 export function transcribeAudio(audioBase64: string, mimeType: string): Promise<{ transcript: string }> {
-  return apiRequest<{ transcript: string }>('/bm/voice-updates/transcribe', {
+  return apiRequest<{ transcript: string }>('/voice-updates/transcribe', {
     method: 'POST',
     body: { audioBase64, mimeType },
   });
 }
 
 export function extractFromTranscript(transcript: string): Promise<VoiceExtractionResult> {
-  return apiRequest<VoiceExtractionResult>('/bm/voice-updates/extract', {
+  return apiRequest<VoiceExtractionResult>('/voice-updates/extract', {
     method: 'POST',
     body: { transcript },
   });
@@ -31,7 +31,7 @@ export function createProposalsFromSession(
   sessionId: string,
   items: ResolvedCandidateItem[]
 ): Promise<CreateProposalsFromSessionResult> {
-  return apiRequest<CreateProposalsFromSessionResult>(`/bm/voice-updates/sessions/${sessionId}/proposals`, {
+  return apiRequest<CreateProposalsFromSessionResult>(`/voice-updates/sessions/${sessionId}/proposals`, {
     method: 'POST',
     body: { items },
   });

@@ -6,6 +6,9 @@ import authRoutes from './routes/auth.routes';
 import orgRoutes from './routes/org.routes';
 import leadRoutes from './routes/lead.routes';
 import dashboardRoutes from './routes/dashboard.routes';
+import zmDashboardRoutes from './routes/zmDashboard.routes';
+import gmDashboardRoutes from './routes/gmDashboard.routes';
+import orgDetailRoutes from './routes/orgDetail.routes';
 import followUpRoutes from './routes/followUp.routes';
 import followUpAccessRoutes from './routes/followUpAccess.routes';
 import bmLeadUpdateRoutes from './routes/bmLeadUpdate.routes';
@@ -43,10 +46,24 @@ export function createApp(): Express {
   // Phase 2 additions — additive only, no existing route above is touched.
   app.use('/api/rm/dashboard', dashboardRoutes);
   app.use('/api/rm/follow-ups', followUpRoutes);
+  // Full-Hierarchy Expansion: the same router (now generalized to
+  // RM/ZM/CO) mounted a second time at a role-agnostic path — the legacy
+  // /api/rm/follow-ups mount above is kept for backward compatibility.
+  app.use('/api/follow-ups', followUpRoutes);
   app.use('/api/follow-up-access', followUpAccessRoutes);
   // Phase 3/4 additions — additive only, no existing route above is touched.
   app.use('/api/bm', bmLeadUpdateRoutes);
   app.use('/api/bm/voice-updates', voiceUpdateRoutes);
+  // Full-Hierarchy Expansion additions — the exact same routers (now
+  // generalized to BM/RM/ZM) mounted a second time at role-agnostic
+  // paths, so RM/ZM clients don't call an endpoint namespaced "/bm/...".
+  // The legacy /api/bm/... mounts above are kept as-is for backward
+  // compatibility with the already-tested BM mobile flow.
+  app.use('/api/lead-updates', bmLeadUpdateRoutes);
+  app.use('/api/voice-updates', voiceUpdateRoutes);
+  app.use('/api/zm/dashboard', zmDashboardRoutes);
+  app.use('/api/gm/dashboard', gmDashboardRoutes);
+  app.use('/api', orgDetailRoutes);
   // Phase 5 additions — additive only.
   app.use('/api/rm', rmCallingRoutes);
   app.use('/api/bm', bmCallingRoutes);

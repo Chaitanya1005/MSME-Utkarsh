@@ -20,10 +20,10 @@ export const listProposalsForLeadHandler = asyncHandler(async (req: Request, res
   sendSuccess(res, proposals);
 });
 
-export const listMyBranchProposalsHandler = asyncHandler(async (req: Request, res: Response) => {
+export const listMyPendingProposalsHandler = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user) throw new AuthenticationError();
   const status = req.query.status as ProposalStatus | undefined;
-  const proposals = await leadUpdateService.listPendingProposalsForMyBranch(req.user, status);
+  const proposals = await leadUpdateService.listMyPendingProposals(req.user, status);
   sendSuccess(res, proposals);
 });
 

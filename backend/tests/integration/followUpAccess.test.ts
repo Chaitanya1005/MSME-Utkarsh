@@ -39,15 +39,15 @@ function extractRawToken(deepLinkUrl: string): string {
   return match[1];
 }
 
-async function createFollowUpFor(branchIds: string[], rmToken: string) {
+async function createFollowUpFor(recipientUserIds: string[], rmToken: string) {
   const res = await request(app)
     .post('/api/rm/follow-ups')
     .set('Authorization', `Bearer ${rmToken}`)
-    .send({ branchIds, channel: 'WHATSAPP' });
+    .send({ recipientUserIds, channel: 'WHATSAPP' });
   expect(res.status).toBe(201);
   return res.body.data.targets as Array<{
     id: string;
-    branchId: string;
+    recipientUserId: string;
     status: string;
     whatsAppDeepLinkUrl?: string;
   }>;
@@ -70,7 +70,7 @@ afterAll(async () => {
 describe('Gate 4 — token storage and issuance', () => {
   it('persists only the SHA-256 hash, never the raw token', async () => {
     const rmToken = await loginAs('rm.a1');
-    const [target] = await createFollowUpFor([fixtures.branchA101.id], rmToken);
+    const [target] = await createFollowUpFor([fixtures.bmA101.id], rmToken);
     const rawToken = extractRawToken(target.whatsAppDeepLinkUrl!);
 
     const row = await prisma.followUpTarget.findUniqueOrThrow({ where: { id: target.id } });
@@ -87,31 +87,31 @@ describe('Gate 4 — token storage and issuance', () => {
 
   it('issues a DIFFERENT token per branch, each scoped to its own branch', async () => {
     const rmToken = await loginAs('rm.a1');
-    const targets = await createFollowUpFor([fixtures.branchA101.id, fixtures.branchA102.id], rmToken);
+    const targets = await createFollowUpFor([fixtures.bmA101.id, fixtures.bmA102.id], rmToken);
     expect(targets).toHaveLength(2);
 
-    const tokensByBranch = new Map(
-      targets.map((t) => [t.branchId, extractRawToken(t.whatsAppDeepLinkUrl!)])
+    const tokensByRecipient = new Map(
+      targets.map((t) => [t.recipientUserId, extractRawToken(t.whatsAppDeepLinkUrl!)])
     );
     const [tokenA101, tokenA102] = [
-      tokensByBranch.get(fixtures.branchA101.id)!,
-      tokensByBranch.get(fixtures.branchA102.id)!,
+      tokensByRecipient.get(fixtures.bmA101.id)!,
+      tokensByRecipient.get(fixtures.bmA102.id)!,
     ];
     expect(tokenA101).not.toBe(tokenA102);
 
     // Branch A101's token must open A101 — and A102's must open A102.
     const resA101 = await request(app).get(`/api/follow-up-access/${tokenA101}`);
-    expect(resA101.body.data.user.branch.id).toBe(fixtures.branchA101.id);
+    expect(resA101.body.data.user.branchId).toBe(fixtures.branchA101.id);
     expect(resA101.body.data.user.username).toBe('bm.a101');
 
     const resA102 = await request(app).get(`/api/follow-up-access/${tokenA102}`);
-    expect(resA102.body.data.user.branch.id).toBe(fixtures.branchA102.id);
+    expect(resA102.body.data.user.branchId).toBe(fixtures.branchA102.id);
     expect(resA102.body.data.user.username).toBe('bm.a102');
   });
 
   it('issues a session whose lifetime is the documented 2 hours', async () => {
     const rmToken = await loginAs('rm.a1');
-    const [target] = await createFollowUpFor([fixtures.branchA101.id], rmToken);
+    const [target] = await createFollowUpFor([fixtures.bmA101.id], rmToken);
     const res = await request(app).get(`/api/follow-up-access/${extractRawToken(target.whatsAppDeepLinkUrl!)}`);
 
     const payload = decodeJwtPayload(res.body.data.token);
@@ -124,7 +124,7 @@ describe('Gate 4 — token storage and issuance', () => {
 describe('Gate 4 — token lifecycle', () => {
   it('marks the target ACCESSED and surfaces that to the RM dashboard', async () => {
     const rmToken = await loginAs('rm.a1');
-    const [target] = await createFollowUpFor([fixtures.branchA101.id], rmToken);
+    const [target] = await createFollowUpFor([fixtures.bmA101.id], rmToken);
     await request(app).get(`/api/follow-up-access/${extractRawToken(target.whatsAppDeepLinkUrl!)}`);
 
     const row = await prisma.followUpTarget.findUniqueOrThrow({ where: { id: target.id } });
@@ -138,7 +138,7 @@ describe('Gate 4 — token lifecycle', () => {
 
   it('stays usable until expiry (documented as reusable, not single-use) without moving accessedAt', async () => {
     const rmToken = await loginAs('rm.a1');
-    const [target] = await createFollowUpFor([fixtures.branchA101.id], rmToken);
+    const [target] = await createFollowUpFor([fixtures.bmA101.id], rmToken);
     const rawToken = extractRawToken(target.whatsAppDeepLinkUrl!);
 
     const first = await request(app).get(`/api/follow-up-access/${rawToken}`);
@@ -149,7 +149,7 @@ describe('Gate 4 — token lifecycle', () => {
 
     const second = await request(app).get(`/api/follow-up-access/${rawToken}`);
     expect(second.status).toBe(200);
-    expect(second.body.data.user.branch.id).toBe(fixtures.branchA101.id);
+    expect(second.body.data.user.branchId).toBe(fixtures.branchA101.id);
 
     // First-access time is the audit-relevant one and must not be rewritten.
     const secondAccessedAt = (
@@ -160,7 +160,7 @@ describe('Gate 4 — token lifecycle', () => {
 
   it('DENIED: an expired link is refused with ACCESS_TOKEN_EXPIRED', async () => {
     const rmToken = await loginAs('rm.a1');
-    const [target] = await createFollowUpFor([fixtures.branchA101.id], rmToken);
+    const [target] = await createFollowUpFor([fixtures.bmA101.id], rmToken);
     const rawToken = extractRawToken(target.whatsAppDeepLinkUrl!);
 
     await prisma.followUpTarget.update({
@@ -176,7 +176,7 @@ describe('Gate 4 — token lifecycle', () => {
 
   it('DENIED: a link belonging to an undeliverable (FAILED) target is inert', async () => {
     const rmToken = await loginAs('rm.a1');
-    const [target] = await createFollowUpFor([fixtures.branchA101.id], rmToken);
+    const [target] = await createFollowUpFor([fixtures.bmA101.id], rmToken);
     const rawToken = extractRawToken(target.whatsAppDeepLinkUrl!);
 
     await prisma.followUpTarget.update({ where: { id: target.id }, data: { status: 'FAILED' } });
@@ -200,24 +200,22 @@ describe('Gate 4 — token lifecycle', () => {
     expect(res.body.error.message).not.toMatch(/branch a|bm\.|region/i);
   });
 
-  it('refuses to open a session when the branch no longer has a BM', async () => {
+  it('refuses to open a session when the target has no resolvable recipient', async () => {
     const rmToken = await loginAs('rm.a1');
-    const [target] = await createFollowUpFor([fixtures.branchA101.id], rmToken);
+    const [target] = await createFollowUpFor([fixtures.bmA101.id], rmToken);
     const rawToken = extractRawToken(target.whatsAppDeepLinkUrl!);
 
-    // A BM cannot be left branch-less: the Phase 1 migration's
-    // users_role_assignment_check CHECK constraint forbids a BM row with a
-    // null branchId. So "the branch lost its BM" means the user row is gone.
-    const bmRow = await prisma.user.findUniqueOrThrow({ where: { id: fixtures.bmA101.id } });
-    await prisma.user.delete({ where: { id: fixtures.bmA101.id } });
+    // recipientUserId's FK is ON DELETE RESTRICT (a recipient can never be
+    // deleted while referenced), so "no resolvable recipient" is simulated
+    // by nulling the column directly rather than deleting the user — the
+    // only way this state can occur is data drift, not a real user action.
+    await prisma.$executeRaw`UPDATE follow_up_targets SET "recipientUserId" = NULL WHERE id = ${target.id}`;
     try {
       const res = await request(app).get(`/api/follow-up-access/${rawToken}`);
       expect(res.status).toBe(409);
-      expect(res.body.error.code).toBe('BRANCH_HAS_NO_BM');
+      expect(res.body.error.code).toBe('RECIPIENT_NOT_FOUND');
     } finally {
-      // Restore (same id): every later test in this file depends on A101
-      // having a BM.
-      await prisma.user.create({ data: bmRow });
+      await prisma.$executeRaw`UPDATE follow_up_targets SET "recipientUserId" = ${fixtures.bmA101.id} WHERE id = ${target.id}`;
     }
   });
 });
@@ -225,7 +223,7 @@ describe('Gate 4 — token lifecycle', () => {
 describe('Gate 4 — what the resulting BM session may and may not do', () => {
   async function bmSessionForA101(): Promise<string> {
     const rmToken = await loginAs('rm.a1');
-    const [target] = await createFollowUpFor([fixtures.branchA101.id], rmToken);
+    const [target] = await createFollowUpFor([fixtures.bmA101.id], rmToken);
     const res = await request(app).get(`/api/follow-up-access/${extractRawToken(target.whatsAppDeepLinkUrl!)}`);
     return res.body.data.token;
   }
@@ -274,7 +272,7 @@ describe('Gate 4 — what the resulting BM session may and may not do', () => {
     const create = await request(app)
       .post('/api/rm/follow-ups')
       .set('Authorization', `Bearer ${bmToken}`)
-      .send({ branchIds: [fixtures.branchA101.id], channel: 'EMAIL' });
+      .send({ recipientUserIds: [fixtures.bmA101.id], channel: 'EMAIL' });
     expect(create.status).toBe(403);
 
     const list = await request(app).get('/api/rm/follow-ups').set('Authorization', `Bearer ${bmToken}`);

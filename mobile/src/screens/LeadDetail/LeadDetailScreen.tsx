@@ -19,57 +19,15 @@ import {
   ErrorState,
 } from '../../components/StatusStates';
 import { useAuth } from '../../auth/AuthContext';
-import { BMStackParamList } from '../../navigation/RootNavigator';
+import { RootStackParamList } from '../../navigation/RootNavigator';
+import { STAGE_META } from '../../constants/pipelineStages';
 
-type Props = NativeStackScreenProps<BMStackParamList, 'LeadDetail'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'LeadDetail'>;
 
-const STAGE_META: Record<
-  string,
-  {
-    color: string;
-    background: string;
-    label: string;
-  }
-> = {
-  // Progressive palette: cool blue/teal for the early paperwork stages,
-  // warm amber/orange while the file is actively being processed, and
-  // green shades for the final approved/disbursed outcomes.
-  LEAD_CONFIRMED: {
-    color: '#0B5CAB',
-    background: '#EAF2FB',
-    label: 'Lead Confirmed',
-  },
-  DOCUMENTS_RECEIVED: {
-    color: '#0B7A96',
-    background: '#E7F5F9',
-    label: 'Documents Received',
-  },
-  BRANCH_PROCESSING: {
-    color: '#B7791F',
-    background: '#FFF6DF',
-    label: 'Branch Processing',
-  },
-  SANCTIONED: {
-    color: '#C2650F',
-    background: '#FFF0E1',
-    label: 'Sanctioned',
-  },
-  TO_RAC: {
-    color: '#C1440E',
-    background: '#FFEEE6',
-    label: 'To RAC',
-  },
-  APPROVED: {
-    color: '#16845A',
-    background: '#EAF8F1',
-    label: 'Approved',
-  },
-  DISBURSED: {
-    color: '#0F6B46',
-    background: '#E3F5EC',
-    label: 'Disbursed',
-  },
-};
+// Full-Hierarchy Expansion: BM/RM/ZM may all propose an update on a lead
+// within their own scope; GM is read-only (no update actions anywhere in
+// its stack — see RootNavigator).
+const PROPOSER_ROLES = ['BM', 'RM', 'ZM'];
 
 export function LeadDetailScreen({
   route,
@@ -78,7 +36,7 @@ export function LeadDetailScreen({
   const { leadId } = route.params;
   const { user } = useAuth();
 
-  const isBm = user?.role === 'BM';
+  const canProposeUpdate = !!user && PROPOSER_ROLES.includes(user.role);
 
   const leadQuery = useQuery({
     queryKey: ['leads', 'detail', leadId],
@@ -88,7 +46,7 @@ export function LeadDetailScreen({
   const proposalsQuery = useQuery({
     queryKey: ['proposals', 'lead', leadId],
     queryFn: () => fetchProposalsForLead(leadId),
-    enabled: isBm,
+    enabled: canProposeUpdate,
   });
 
   const activityQuery = useQuery({
@@ -115,7 +73,7 @@ export function LeadDetailScreen({
 
   const lead = leadQuery.data!;
 
-  const pendingProposals = isBm
+  const pendingProposals = canProposeUpdate
     ? (proposalsQuery.data ?? []).filter(
         (proposal) => proposal.status === 'PENDING',
       )
@@ -366,7 +324,7 @@ export function LeadDetailScreen({
           BM PENDING PROPOSALS
       ========================================================= */}
 
-      {isBm && pendingProposals.length > 0 ? (
+      {canProposeUpdate && pendingProposals.length > 0 ? (
         <View
           style={styles.pendingCard}
           testID="lead-pending-banner"
@@ -395,7 +353,7 @@ export function LeadDetailScreen({
           BM UPDATE ACTION
       ========================================================= */}
 
-      {isBm ? (
+      {canProposeUpdate ? (
         <TouchableOpacity
           style={styles.proposeButton}
           activeOpacity={0.84}

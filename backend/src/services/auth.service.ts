@@ -13,6 +13,7 @@ interface LoginResult {
     role: Role;
     regionId: string | null;
     branchId: string | null;
+    zoneId: string | null;
   };
 }
 
@@ -36,6 +37,7 @@ export async function login(username: string, password: string): Promise<LoginRe
     role: user.role as Role,
     regionId: user.regionId ?? undefined,
     branchId: user.branchId ?? undefined,
+    zoneId: user.zoneId ?? undefined,
   };
 
   const token = signAuthToken(payload);
@@ -49,6 +51,7 @@ export async function login(username: string, password: string): Promise<LoginRe
       role: user.role as Role,
       regionId: user.regionId,
       branchId: user.branchId,
+      zoneId: user.zoneId,
     },
   };
 }
@@ -67,5 +70,6 @@ export async function getCurrentUser(userId: string) {
     role: user.role as Role,
     region: user.region ? { id: user.region.id, name: user.region.name } : null,
     branch: user.branch ? { id: user.branch.id, name: user.branch.name } : null,
+    zone: user.zone ? { id: user.zone.id, name: user.zone.name } : null,
   };
 }

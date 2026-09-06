@@ -18,7 +18,7 @@ import {
 const router = Router();
 
 router.use(authenticate);
-router.use(requireRole('BM'));
+router.use(requireRole('BM', 'RM', 'ZM'));
 
 router.post('/transcribe', validate({ body: transcribeAudioSchema }), transcribeAudioHandler);
 router.post('/extract', validate({ body: extractTranscriptSchema }), extractHandler);

@@ -4,7 +4,13 @@ import {
   LeadListFilters,
   Pagination,
 } from '../repositories/lead.repository';
-import { findBranchesByRegion } from '../repositories/org.repository';
+import {
+  findBranchesByRegion,
+  findBranchesByZone,
+  findRegionsByZone,
+  findAllBranches,
+  findAllRegions,
+} from '../repositories/org.repository';
 import { AuthTokenPayload } from '../types/domain';
 import { canAccessLead } from './authorization';
 import { AuthorizationError, NotFoundError, ValidationError } from '../utils/AppError';
@@ -13,7 +19,27 @@ import { PaginatedResult } from '../types/domain';
 // Computes the set of branchIds/regionIds this user is actually allowed
 // to see leads for. This is the ONLY place lead scope is derived — every
 // lead-listing code path must go through it (spec section 27/28).
+// Generalized for the full hierarchy: ZM's scope is every branch/region
+// under their zone; CO's scope is every branch/region org-wide.
 async function computeLeadScope(user: AuthTokenPayload) {
+  if (user.role === 'CO') {
+    const [branches, regions] = await Promise.all([findAllBranches(), findAllRegions()]);
+    return {
+      branchIds: branches.map((b) => b.id),
+      regionIds: regions.map((r) => r.id),
+    };
+  }
+  if (user.role === 'ZM') {
+    if (!user.zoneId) throw new NotFoundError('Zone assignment');
+    const [branches, regions] = await Promise.all([
+      findBranchesByZone(user.zoneId),
+      findRegionsByZone(user.zoneId),
+    ]);
+    return {
+      branchIds: branches.map((b) => b.id),
+      regionIds: regions.map((r) => r.id),
+    };
+  }
   if (user.role === 'RM') {
     if (!user.regionId) throw new NotFoundError('Region assignment');
     const branches = await findBranchesByRegion(user.regionId);
@@ -26,7 +52,7 @@ async function computeLeadScope(user: AuthTokenPayload) {
     if (!user.branchId) throw new NotFoundError('Branch assignment');
     return { branchIds: [user.branchId], regionIds: [] as string[] };
   }
-  throw new AuthorizationError('This role has no Phase 1 lead access');
+  throw new AuthorizationError('This role has no lead access');
 }
 
 export async function listAuthorizedLeads(
@@ -62,11 +88,12 @@ export async function getAuthorizedLead(user: AuthTokenPayload, leadId: string) 
   const result = await findLeadWithEffectiveRegion(leadId);
   if (!result) throw new NotFoundError('Lead');
 
-  const { lead, effectiveRegionId } = result;
+  const { lead, effectiveRegionId, effectiveZoneId } = result;
 
   const allowed = canAccessLead(user, {
     branchId: lead.branchId,
     effectiveRegionId,
+    effectiveZoneId,
   });
 
   if (!allowed) {

@@ -30,6 +30,7 @@ export interface CurrentUser {
   role: Role;
   region: { id: string; name: string } | null;
   branch: { id: string; name: string } | null;
+  zone: { id: string; name: string } | null;
 }
 
 export interface LoginResponse {
@@ -41,6 +42,7 @@ export interface LoginResponse {
     role: Role;
     regionId: string | null;
     branchId: string | null;
+    zoneId: string | null;
   };
 }
 
@@ -117,11 +119,70 @@ export interface RmDashboard {
   };
 }
 
+// --- Full-Hierarchy Expansion: ZM/GM dashboards & region/zone detail ------
+
+export interface ZmDashboardRegion {
+  id: string;
+  name: string;
+  branchCount: number;
+  totalLeads: number;
+  leadsByStage: Record<PipelineStage, number>;
+}
+
+export interface ZmDashboard {
+  zone: { id: string; name: string };
+  regions: ZmDashboardRegion[];
+  summary: { totalRegions: number; totalBranches: number; totalLeads: number };
+}
+
+export interface GmDashboardZone {
+  id: string;
+  name: string;
+  branchCount: number;
+  totalLeads: number;
+  leadsByStage: Record<PipelineStage, number>;
+}
+
+export interface GmDashboard {
+  zones: GmDashboardZone[];
+  summary: { totalZones: number; totalBranches: number; totalLeads: number };
+}
+
+export interface RegionDetailBranch {
+  id: string;
+  name: string;
+  bm: { id: string; name: string } | null;
+  totalLeads: number;
+  leadsByStage: Record<PipelineStage, number>;
+}
+
+export interface RegionDetail {
+  region: { id: string; name: string };
+  totalLeads: number;
+  leadsByStage: Record<PipelineStage, number>;
+  branches: RegionDetailBranch[];
+}
+
+export interface ZoneDetailRegion {
+  id: string;
+  name: string;
+  branchCount: number;
+  totalLeads: number;
+  leadsByStage: Record<PipelineStage, number>;
+}
+
+export interface ZoneDetail {
+  zone: { id: string; name: string };
+  totalLeads: number;
+  leadsByStage: Record<PipelineStage, number>;
+  regions: ZoneDetailRegion[];
+}
+
 export type FollowUpChannel = 'WHATSAPP' | 'EMAIL';
 export type FollowUpTargetStatus = 'PENDING' | 'SENT' | 'FAILED' | 'ACCESSED';
 
 export interface CreateFollowUpRequest {
-  branchIds: string[];
+  recipientUserIds: string[];
   channel: FollowUpChannel;
   customNote?: string;
 }
@@ -130,8 +191,8 @@ export interface FollowUpTargetResult {
   // FollowUpTarget row id — required to confirm a WhatsApp target as
   // sent after the device opens the deep link.
   id: string;
-  branchId: string;
-  branchName: string;
+  recipientUserId: string;
+  recipientLabel: string;
   status: 'PENDING' | 'SENT' | 'FAILED';
   failureReason?: string;
   whatsAppDeepLinkUrl?: string;
@@ -154,7 +215,8 @@ export interface FollowUpHistoryItem {
     sentAt: string | null;
     accessedAt: string | null;
     failureReason: string | null;
-    branch: { id: string; name: string };
+    recipientRole: Role;
+    recipientLabel: string;
   }>;
 }
 
@@ -164,9 +226,28 @@ export interface FollowUpAccessResult {
     id: string;
     username: string;
     name: string;
-    role: 'BM';
-    branch: { id: string; name: string };
+    role: Role;
+    branchId?: string;
+    regionId?: string;
+    zoneId?: string;
+    orgUnitLabel: string;
   };
+}
+
+// One selectable org unit (region/branch/zone) in the FollowUpScreen's
+// level-toggle multi-select — recipientUserId is null when the unit has
+// no head assigned yet (render as unselectable).
+export interface FollowUpCandidate {
+  id: string;
+  name: string;
+  recipientUserId: string | null;
+  recipientName: string | null;
+}
+
+export interface FollowUpCandidates {
+  zones?: FollowUpCandidate[];
+  regions?: FollowUpCandidate[];
+  branches?: FollowUpCandidate[];
 }
 
 // --- Phase 3/4: unified lead-update pipeline types ------------------------

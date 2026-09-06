@@ -16,6 +16,10 @@ export const branchIdParamSchema = z.object({
   branchId: idParam,
 });
 
+export const zoneIdParamSchema = z.object({
+  zoneId: idParam,
+});
+
 export const leadIdParamSchema = z.object({
   leadId: idParam,
 });
@@ -33,7 +37,7 @@ export const listLeadsQuerySchema = z.object({
 // --- Phase 2: follow-up validation --------------------------------------
 
 export const createFollowUpSchema = z.object({
-  branchIds: z.array(idParam).min(1, 'At least one branch must be selected').max(50),
+  recipientUserIds: z.array(idParam).min(1, 'At least one recipient must be selected').max(50),
   channel: z.enum(['WHATSAPP', 'EMAIL']),
   customNote: z.string().trim().max(300).optional(),
 });

@@ -60,6 +60,15 @@ export async function seedTestFixtures(prisma: PrismaClient) {
   const bmB101 = await prisma.user.create({
     data: { username: 'bm.b101', passwordHash, name: 'BM B101', role: 'BM', branchId: branchB101.id },
   });
+  const zmA = await prisma.user.create({
+    data: { username: 'zm.a', passwordHash, name: 'ZM A', role: 'ZM', zoneId: zoneA.id },
+  });
+  const zmB = await prisma.user.create({
+    data: { username: 'zm.b', passwordHash, name: 'ZM B', role: 'ZM', zoneId: zoneB.id },
+  });
+  const gm = await prisma.user.create({
+    data: { username: 'gm', passwordHash, name: 'General Manager', role: 'CO' },
+  });
 
   const leadA101 = await prisma.lead.create({
     data: {
@@ -121,6 +130,9 @@ export async function seedTestFixtures(prisma: PrismaClient) {
     bmA101,
     bmA102,
     bmB101,
+    zmA,
+    zmB,
+    gm,
     leadA101,
     leadB101,
     leadRegionA1,

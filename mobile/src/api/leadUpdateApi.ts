@@ -12,14 +12,14 @@ export function createManualProposal(
   proposedStage: PipelineStage,
   remarks?: string
 ): Promise<LeadUpdateProposal> {
-  return apiRequest<LeadUpdateProposal>(`/bm/leads/${leadId}/proposals`, {
+  return apiRequest<LeadUpdateProposal>(`/lead-updates/leads/${leadId}/proposals`, {
     method: 'POST',
     body: { proposedStage, remarks },
   });
 }
 
 export function fetchProposalsForLead(leadId: string): Promise<LeadUpdateProposal[]> {
-  return apiRequest<LeadUpdateProposal[]>(`/bm/leads/${leadId}/proposals`);
+  return apiRequest<LeadUpdateProposal[]>(`/lead-updates/leads/${leadId}/proposals`);
 }
 
 export function fetchLeadActivity(leadId: string): Promise<LeadActivityEntry[]> {
@@ -30,21 +30,21 @@ export function fetchLeadActivity(leadId: string): Promise<LeadActivityEntry[]> 
   return apiRequest<LeadActivityEntry[]>(`/leads/${leadId}/activity`);
 }
 
-export function fetchMyBranchProposals(status?: ProposalStatus): Promise<LeadUpdateProposal[]> {
-  return apiRequest<LeadUpdateProposal[]>('/bm/proposals', { query: status ? { status } : undefined });
+export function fetchMyPendingProposals(status?: ProposalStatus): Promise<LeadUpdateProposal[]> {
+  return apiRequest<LeadUpdateProposal[]>('/lead-updates/proposals', { query: status ? { status } : undefined });
 }
 
 export function confirmProposal(proposalId: string): Promise<unknown> {
-  return apiRequest(`/bm/proposals/${proposalId}/confirm`, { method: 'POST' });
+  return apiRequest(`/lead-updates/proposals/${proposalId}/confirm`, { method: 'POST' });
 }
 
 export function confirmProposalsBatch(proposalIds: string[]): Promise<BatchConfirmResultItem[]> {
-  return apiRequest<BatchConfirmResultItem[]>('/bm/proposals/confirm-batch', {
+  return apiRequest<BatchConfirmResultItem[]>('/lead-updates/proposals/confirm-batch', {
     method: 'POST',
     body: { proposalIds },
   });
 }
 
 export function rejectProposal(proposalId: string): Promise<unknown> {
-  return apiRequest(`/bm/proposals/${proposalId}/reject`, { method: 'POST' });
+  return apiRequest(`/lead-updates/proposals/${proposalId}/reject`, { method: 'POST' });
 }

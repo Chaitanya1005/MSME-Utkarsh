@@ -1,18 +1,19 @@
-import { buildFollowUpMessage, sanitizeCustomNote } from '../../src/utils/messageTemplate';
+import { buildFollowUpMessage, sanitizeCustomNote, ROLE_LABELS } from '../../src/utils/messageTemplate';
 
 describe('buildFollowUpMessage', () => {
   const baseInput = {
-    branchName: 'Branch A101',
-    regionName: 'Region A1',
-    rmName: 'rm.a1',
+    orgUnitLine: 'Branch: Branch A101 (Region: Region A1)',
+    senderName: 'rm.a1',
+    senderRole: 'RM' as const,
+    recipientName: 'bm.a101',
+    recipientRole: 'BM' as const,
     accessUrl: 'cbipes://follow-up-access/abc123',
   };
 
-  it('includes the branch, region, RM, and access URL', () => {
+  it('includes the org unit line, sender name, role label, and access URL', () => {
     const message = buildFollowUpMessage(baseInput);
-    expect(message).toContain('Branch A101');
-    expect(message).toContain('Region A1');
-    expect(message).toContain('rm.a1');
+    expect(message).toContain('Branch: Branch A101 (Region: Region A1)');
+    expect(message).toContain('Requested by: Regional Head (rm.a1)');
     expect(message).toContain('cbipes://follow-up-access/abc123');
   });
 
@@ -24,12 +25,44 @@ describe('buildFollowUpMessage', () => {
 
   it('omits the custom note section entirely when no note is given', () => {
     const message = buildFollowUpMessage(baseInput);
-    expect(message).not.toContain('Note from RM:');
+    expect(message).not.toContain('Note from');
   });
 
   it('omits the custom note section when the note is only whitespace', () => {
     const message = buildFollowUpMessage({ ...baseInput, customNote: '   ' });
-    expect(message).not.toContain('Note from RM:');
+    expect(message).not.toContain('Note from');
+  });
+
+  // Every sender/recipient pair actually reachable via
+  // authorization.ts#canInitiateFollowUpTo (Full-Hierarchy Expansion
+  // plan, Phase 3) — RM never receives a follow-up in this model, so
+  // RM only ever appears as sender.
+  it.each([
+    ['RM', 'BM'],
+    ['ZM', 'RM'],
+    ['ZM', 'BM'],
+    ['CO', 'ZM'],
+    ['CO', 'RM'],
+    ['CO', 'BM'],
+  ] as const)('renders the correct role labels for %s -> %s', (senderRole, recipientRole) => {
+    const message = buildFollowUpMessage({
+      ...baseInput,
+      senderName: 'sender.name',
+      senderRole,
+      recipientName: 'recipient.name',
+      recipientRole,
+    });
+    expect(message).toContain(`Requested by: ${ROLE_LABELS[senderRole]} (sender.name)`);
+    expect(message).toContain(`intended only for the ${ROLE_LABELS[recipientRole]} named above`);
+  });
+
+  it('actually interpolates senderName into the "Note from" line, not a hardcoded role', () => {
+    const message = buildFollowUpMessage({
+      ...baseInput,
+      senderRole: 'ZM',
+      customNote: 'Please expedite.',
+    });
+    expect(message).toContain('Note from Zonal Head: Please expedite.');
   });
 });
 

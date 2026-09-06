@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -15,6 +15,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
   confirmWhatsAppSent,
   createFollowUp,
+  fetchFollowUpCandidates,
 } from '../../api/followUpApi';
 
 import { initiateCall } from '../../api/callingApi';
@@ -22,16 +23,25 @@ import { fetchBranch } from '../../api/orgApi';
 
 import {
   CreateFollowUpResult,
+  FollowUpCandidate,
   FollowUpChannel,
   FollowUpTargetResult,
 } from '../../types/api';
 
 import { ApiError } from '../../api/client';
-import { RMStackParamList } from '../../navigation/RootNavigator';
+import { RootStackParamList } from '../../navigation/RootNavigator';
 
-type Props = NativeStackScreenProps<RMStackParamList, 'FollowUp'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'FollowUp'>;
 
 type ChannelMode = FollowUpChannel | 'CALL';
+type CandidateLevel = 'zones' | 'regions' | 'branches';
+
+const LEVEL_ORDER: CandidateLevel[] = ['zones', 'regions', 'branches'];
+const LEVEL_LABEL: Record<CandidateLevel, string> = {
+  zones: 'Zones',
+  regions: 'Regions',
+  branches: 'Branches',
+};
 
 const CHANNELS: Array<{
   value: ChannelMode;
@@ -55,13 +65,87 @@ const CHANNELS: Array<{
   },
 ];
 
+interface Recipient {
+  id: string;
+  name: string;
+}
+
 export function FollowUpScreen({
   route,
   navigation,
 }: Props) {
-  const { branchIds } = route.params;
+  const params = route.params;
+  const branchMode = !!params && 'branchIds' in params;
+  const branchIds = branchMode ? params.branchIds : [];
 
   const queryClient = useQueryClient();
+
+  // Non-branch flow: either the caller already resolved recipients (ZM/GM
+  // dashboards) or nothing was preselected and this screen resolves them
+  // itself via the role-driven level toggle (Full-Hierarchy Expansion
+  // plan, Phase 4). Branch mode never uses this — it resolves recipients
+  // from branch records at submit time instead, so the Call feature keeps
+  // working against real branch ids exactly as before.
+  const [pickedRecipients, setPickedRecipients] = useState<Recipient[]>(
+    !branchMode && params && 'recipients' in params ? params.recipients : [],
+  );
+
+  const needsSelector = !branchMode && pickedRecipients.length === 0;
+
+  const [selectedLevel, setSelectedLevel] = useState<CandidateLevel | null>(null);
+  const [selectedCandidateIds, setSelectedCandidateIds] = useState<Set<string>>(new Set());
+
+  const candidatesQuery = useQuery({
+    queryKey: ['follow-up-candidates'],
+    queryFn: fetchFollowUpCandidates,
+    enabled: needsSelector,
+  });
+
+  const availableLevels: CandidateLevel[] = candidatesQuery.data
+    ? LEVEL_ORDER.filter((level) => candidatesQuery.data![level] !== undefined)
+    : [];
+
+  useEffect(() => {
+    if (needsSelector && selectedLevel === null && availableLevels.length > 0) {
+      setSelectedLevel(availableLevels[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [needsSelector, availableLevels.join(',')]);
+
+  const currentCandidates: FollowUpCandidate[] =
+    selectedLevel && candidatesQuery.data ? candidatesQuery.data[selectedLevel] ?? [] : [];
+
+  function toggleCandidate(id: string) {
+    setSelectedCandidateIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function selectAllCandidates() {
+    setSelectedCandidateIds(new Set(currentCandidates.filter((c) => c.recipientUserId).map((c) => c.id)));
+  }
+
+  function changeLevel(level: CandidateLevel) {
+    setSelectedLevel(level);
+    setSelectedCandidateIds(new Set());
+  }
+
+  function confirmSelection() {
+    const resolved = currentCandidates
+      .filter((c) => selectedCandidateIds.has(c.id) && c.recipientUserId)
+      .map((c) => ({ id: c.recipientUserId as string, name: c.recipientName ?? c.name }));
+    if (resolved.length === 0) return;
+    setPickedRecipients(resolved);
+  }
+
+  const recipients: Recipient[] = pickedRecipients;
+  const recipientCount = branchMode ? branchIds.length : recipients.length;
 
   const [channel, setChannel] =
     useState<ChannelMode>('WHATSAPP');
@@ -76,10 +160,8 @@ export function FollowUpScreen({
   >({});
 
   /*
-   * Fetch selected branch details only for CALL mode.
-   *
-   * WhatsApp / Email continue using the existing
-   * createFollowUp flow exactly as before.
+   * Fetch selected branch details only for CALL mode (branch flow only —
+   * Call operates on real branch records, not a generic recipient).
    */
   const selectedBranchesQuery = useQuery({
     queryKey: ['follow-up', 'selected-branches', branchIds],
@@ -92,32 +174,42 @@ export function FollowUpScreen({
 
       return branches;
     },
-    enabled: channel === 'CALL',
+    enabled: branchMode && channel === 'CALL',
   });
 
   /*
-   * Existing WhatsApp / Email send mutation.
+   * Existing WhatsApp / Email send mutation, generalized to resolve
+   * recipientUserIds from whichever mode is active.
    */
   const sendMutation = useMutation({
-    mutationFn: () =>
-      createFollowUp({
-        branchIds,
+    mutationFn: async () => {
+      let recipientUserIds: string[];
+      if (branchMode) {
+        const branches = await Promise.all(branchIds.map((id) => fetchBranch(id)));
+        recipientUserIds = branches.filter((b) => b.bm).map((b) => b.bm!.id);
+      } else {
+        recipientUserIds = recipients.map((r) => r.id);
+      }
+
+      return createFollowUp({
+        recipientUserIds,
         channel: channel as FollowUpChannel,
         customNote:
           customNote || undefined,
-      }),
+      });
+    },
 
     onSuccess: (data) => {
       setResult(data);
 
       queryClient.invalidateQueries({
-        queryKey: ['dashboard', 'rm'],
+        queryKey: ['dashboard'],
       });
     },
   });
 
   /*
-   * Existing call provider flow.
+   * Existing call provider flow (branch mode only).
    *
    * Calls are started branch-by-branch so the RM can see
    * exactly what happened to every selected branch.
@@ -217,7 +309,7 @@ export function FollowUpScreen({
       );
 
       queryClient.invalidateQueries({
-        queryKey: ['dashboard', 'rm'],
+        queryKey: ['dashboard'],
       });
     } catch {
       // Follow-up remains pending.
@@ -254,8 +346,8 @@ export function FollowUpScreen({
                 (t) => t.status !== 'FAILED',
               ).length
             }{' '}
-            of {result.targets.length} branch
-            {result.targets.length > 1 ? 'es' : ''}{' '}
+            of {result.targets.length} recipient
+            {result.targets.length > 1 ? 's' : ''}{' '}
             reached
           </Text>
         </View>
@@ -266,7 +358,7 @@ export function FollowUpScreen({
 
         {result.targets.map((target) => (
           <View
-            key={target.branchId}
+            key={target.id}
             style={styles.resultRow}
           >
             <View style={styles.resultRowHeader}>
@@ -281,7 +373,7 @@ export function FollowUpScreen({
                   style={styles.resultBranchName}
                   numberOfLines={1}
                 >
-                  {target.branchName}
+                  {target.recipientLabel}
                 </Text>
               </View>
 
@@ -303,7 +395,7 @@ export function FollowUpScreen({
                 onPress={() =>
                   openWhatsApp(target)
                 }
-                testID={`open-whatsapp-${target.branchId}`}
+                testID={`open-whatsapp-${target.id}`}
                 activeOpacity={0.84}
               >
                 <Text
@@ -333,12 +425,153 @@ export function FollowUpScreen({
 
   /*
    * ============================================================
+   * SELECTOR SCREEN — role-driven level toggle + multi-select
+   * (only reached when nothing was preselected on the dashboard)
+   * ============================================================
+   */
+
+  if (needsSelector) {
+    if (candidatesQuery.isLoading) {
+      return (
+        <View style={styles.selectorLoading}>
+          <ActivityIndicator size="large" color="#0B5CAB" />
+        </View>
+      );
+    }
+
+    if (candidatesQuery.isError || !selectedLevel) {
+      return (
+        <View style={styles.selectorLoading}>
+          <Text style={styles.errorText}>
+            {candidatesQuery.error instanceof ApiError
+              ? candidatesQuery.error.message
+              : 'Could not load who you can follow up with.'}
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.hero}>
+          <View style={styles.heroEyebrowRow}>
+            <View style={styles.heroAccent} />
+            <Text style={styles.heroEyebrow}>MSME - UTKARSH</Text>
+          </View>
+
+          <Text style={styles.title}>Who do you want to follow up with?</Text>
+          <Text style={styles.subtitle}>Choose a level, then select who should receive it.</Text>
+        </View>
+
+        {availableLevels.length > 1 ? (
+          <View style={styles.levelToggle}>
+            {availableLevels.map((level) => {
+              const selected = selectedLevel === level;
+              return (
+                <TouchableOpacity
+                  key={level}
+                  style={[styles.levelOption, selected && styles.levelOptionSelected]}
+                  onPress={() => changeLevel(level)}
+                  activeOpacity={0.82}
+                  testID={`follow-up-level-${level}`}
+                >
+                  <Text style={[styles.levelOptionText, selected && styles.levelOptionTextSelected]}>
+                    {LEVEL_LABEL[level]}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ) : null}
+
+        <View style={styles.selectionRow}>
+          <TouchableOpacity
+            activeOpacity={0.75}
+            style={styles.primarySelectionButton}
+            onPress={selectAllCandidates}
+            testID="select-all-candidates-button"
+          >
+            <Text style={styles.primarySelectionButtonText}>Select all</Text>
+          </TouchableOpacity>
+
+          {selectedCandidateIds.size > 0 ? (
+            <TouchableOpacity activeOpacity={0.75} style={styles.clearButton} onPress={() => setSelectedCandidateIds(new Set())}>
+              <Text style={styles.clearButtonText}>Clear</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+
+        <View style={styles.candidateListCard}>
+          {currentCandidates.length === 0 ? (
+            <Text style={styles.emptyCandidatesText}>Nothing available at this level.</Text>
+          ) : (
+            currentCandidates.map((candidate, index) => {
+              const disabled = !candidate.recipientUserId;
+              const selected = selectedCandidateIds.has(candidate.id);
+
+              return (
+                <TouchableOpacity
+                  key={candidate.id}
+                  activeOpacity={disabled ? 1 : 0.8}
+                  disabled={disabled}
+                  style={[
+                    styles.candidateRow,
+                    index === currentCandidates.length - 1 && styles.candidateRowLast,
+                    disabled && styles.candidateRowDisabled,
+                  ]}
+                  onPress={() => toggleCandidate(candidate.id)}
+                  testID={`candidate-select-${candidate.id}`}
+                >
+                  <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
+                    {selected ? <Text style={styles.checkboxMark}>✓</Text> : null}
+                  </View>
+
+                  <View style={styles.candidateInfo}>
+                    <Text style={styles.candidateName} numberOfLines={1}>
+                      {candidate.name}
+                    </Text>
+                    <Text style={styles.candidateSubtext} numberOfLines={1}>
+                      {candidate.recipientName ? `Head: ${candidate.recipientName}` : 'No head assigned yet'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })
+          )}
+        </View>
+
+        <TouchableOpacity
+          style={[styles.sendButton, selectedCandidateIds.size === 0 && styles.actionButtonDisabled]}
+          onPress={confirmSelection}
+          disabled={selectedCandidateIds.size === 0}
+          testID="confirm-selection-button"
+          activeOpacity={0.84}
+        >
+          <Text style={styles.sendButtonText}>
+            Continue with {selectedCandidateIds.size} selected
+          </Text>
+          <Text style={styles.sendButtonArrow}>→</Text>
+        </TouchableOpacity>
+
+        <View style={styles.bottomSpace} />
+      </ScrollView>
+    );
+  }
+
+  /*
+   * ============================================================
    * MAIN SCREEN
    * ============================================================
    */
 
   const selectedBranches =
     selectedBranchesQuery.data ?? [];
+
+  const channelOptions = branchMode ? CHANNELS : CHANNELS.filter((c) => c.value !== 'CALL');
 
   return (
     <ScrollView
@@ -361,15 +594,33 @@ export function FollowUpScreen({
         </View>
 
         <Text style={styles.title}>
-          Follow up with {branchIds.length} branch
-          {branchIds.length > 1 ? 'es' : ''}
+          Follow up with {recipientCount} {branchMode ? 'branch' : 'recipient'}
+          {recipientCount > 1 ? (branchMode ? 'es' : 's') : ''}
         </Text>
 
         <Text style={styles.subtitle}>
-          Choose how you want to reach the selected
-          branches.
+          Choose how you want to reach {branchMode ? 'the selected branches' : 'the selected recipients'}.
         </Text>
       </View>
+
+      {/* ========================================================
+          RECIPIENTS (non-branch modes only)
+      ======================================================== */}
+
+      {!branchMode ? (
+        <View style={styles.recipientsCard}>
+          {recipients.map((r, index) => (
+            <View key={r.id} style={[styles.recipientRow, index === recipients.length - 1 && styles.recipientRowLast]}>
+              <View style={styles.recipientAvatar}>
+                <Text style={styles.recipientAvatarText}>{r.name.charAt(0).toUpperCase()}</Text>
+              </View>
+              <Text style={styles.recipientName} numberOfLines={1}>
+                {r.name}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
 
       {/* ========================================================
           CHANNEL
@@ -380,7 +631,7 @@ export function FollowUpScreen({
       </Text>
 
       <View style={styles.channelCard}>
-        {CHANNELS.map((item) => {
+        {channelOptions.map((item) => {
           const selected =
             channel === item.value;
 
@@ -690,7 +941,7 @@ export function FollowUpScreen({
                     styles.previewHeaderSubtitle
                   }
                 >
-                  Sent to selected branch managers
+                  Sent to selected recipients
                 </Text>
               </View>
             </View>
@@ -704,7 +955,7 @@ export function FollowUpScreen({
               Central Bank of India
               {'\n\n'}
               Please review and update your
-              branch&apos;s lead pipeline at your
+              lead pipeline at your
               earliest convenience.
               {'\n\n'}
               A secure access link will be included
@@ -921,6 +1172,13 @@ const styles = StyleSheet.create({
     paddingBottom: 36,
   },
 
+  selectorLoading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F5F8FC',
+  },
+
   /* =============================================================
      HERO
   ============================================================= */
@@ -975,6 +1233,196 @@ const styles = StyleSheet.create({
     lineHeight: 16,
 
     maxWidth: 330,
+  },
+
+  /* =============================================================
+     LEVEL TOGGLE
+  ============================================================= */
+
+  levelToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#DDE6EE',
+    borderRadius: 13,
+    padding: 4,
+    marginBottom: 16,
+  },
+
+  levelOption: {
+    flex: 1,
+    minHeight: 40,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  levelOptionSelected: {
+    backgroundColor: '#0B5CAB',
+  },
+
+  levelOptionText: {
+    color: '#5E6A76',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
+  levelOptionTextSelected: {
+    color: '#FFFFFF',
+  },
+
+  /* =============================================================
+     RECIPIENTS (non-branch)
+  ============================================================= */
+
+  recipientsCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#DDE6EE',
+    borderRadius: 16,
+    paddingHorizontal: 13,
+    marginBottom: 22,
+  },
+
+  recipientRow: {
+    minHeight: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEF2F5',
+  },
+
+  recipientRowLast: {
+    borderBottomWidth: 0,
+  },
+
+  recipientAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: '#EAF2FB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+
+  recipientAvatarText: {
+    color: '#0B5CAB',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+
+  recipientName: {
+    color: '#24313E',
+    fontSize: 12.5,
+    fontWeight: '700',
+    flex: 1,
+  },
+
+  /* =============================================================
+     CANDIDATE SELECTION
+  ============================================================= */
+
+  selectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
+  primarySelectionButton: {
+    backgroundColor: '#0B5CAB',
+    borderRadius: 9,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+    marginRight: 7,
+  },
+
+  primarySelectionButtonText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
+  clearButton: {
+    paddingHorizontal: 7,
+    paddingVertical: 8,
+  },
+
+  clearButtonText: {
+    color: '#7A8794',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
+  candidateListCard: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#DDE6EE',
+    borderRadius: 16,
+    paddingHorizontal: 13,
+    marginBottom: 20,
+  },
+
+  emptyCandidatesText: {
+    color: '#8A96A2',
+    fontSize: 12,
+    textAlign: 'center',
+    paddingVertical: 20,
+  },
+
+  candidateRow: {
+    minHeight: 60,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEF2F5',
+  },
+
+  candidateRowLast: {
+    borderBottomWidth: 0,
+  },
+
+  candidateRowDisabled: {
+    opacity: 0.45,
+  },
+
+  checkbox: {
+    width: 21,
+    height: 21,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: '#AEBCC9',
+    marginRight: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+
+  checkboxSelected: {
+    backgroundColor: '#0B5CAB',
+    borderColor: '#0B5CAB',
+  },
+
+  checkboxMark: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+
+  candidateInfo: {
+    flex: 1,
+  },
+
+  candidateName: {
+    color: '#1D2A37',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+
+  candidateSubtext: {
+    color: '#7B8793',
+    fontSize: 10,
+    marginTop: 2,
   },
 
   /* =============================================================

@@ -1,8 +1,14 @@
-import { FollowUpChannel, FollowUpTargetStatus, Prisma } from '@prisma/client';
+import { FollowUpChannel, FollowUpTargetStatus, Prisma, Role } from '@prisma/client';
 import { prisma } from '../config/prisma';
 
 export interface CreateFollowUpTargetInput {
-  branchId: string;
+  // Populated only when the recipient happens to be a BM (legacy/
+  // branch-shortcut, for backward compatibility with any code still
+  // reading it directly) — null for region/zone-level recipients.
+  branchId: string | null;
+  recipientUserId: string;
+  recipientRole: Role;
+  recipientLabel: string;
   accessTokenHash: string;
   tokenExpiresAt: Date;
   status: FollowUpTargetStatus;
@@ -18,7 +24,8 @@ export interface CreateFollowUpInput {
 }
 
 // Creates the FollowUp and all of its FollowUpTargets atomically — a
-// multi-branch follow-up must not end up half-persisted (spec section 19).
+// multi-recipient follow-up must not end up half-persisted (spec section
+// 19).
 export function createFollowUp(input: CreateFollowUpInput) {
   return prisma.followUp.create({
     data: {
@@ -28,6 +35,9 @@ export function createFollowUp(input: CreateFollowUpInput) {
       targets: {
         create: input.targets.map((t) => ({
           branchId: t.branchId,
+          recipientUserId: t.recipientUserId,
+          recipientRole: t.recipientRole,
+          recipientLabel: t.recipientLabel,
           accessTokenHash: t.accessTokenHash,
           tokenExpiresAt: t.tokenExpiresAt,
           status: t.status,
@@ -44,7 +54,13 @@ export function findFollowUpTargetByTokenHash(accessTokenHash: string) {
   return prisma.followUpTarget.findUnique({
     where: { accessTokenHash },
     include: {
-      branch: { include: { bm: true, region: true } },
+      recipient: {
+        include: {
+          branch: true,
+          region: { include: { zone: true } },
+          zone: true,
+        },
+      },
       followUp: true,
     },
   });
@@ -65,8 +81,9 @@ export function markFollowUpTargetSent(targetId: string) {
 }
 
 // Confirms a specific target belongs to a follow-up initiated by the
-// given RM before allowing a client-confirmed "mark as sent" (WhatsApp
-// flow) — prevents one RM confirming/mutating another RM's follow-up.
+// given user before allowing a client-confirmed "mark as sent" (WhatsApp
+// flow) — prevents one sender confirming/mutating another sender's
+// follow-up.
 export function findFollowUpTargetForInitiator(targetId: string, initiatedByUserId: string) {
   return prisma.followUpTarget.findFirst({
     where: { id: targetId, followUp: { initiatedByUserId } },
@@ -76,6 +93,8 @@ export function findFollowUpTargetForInitiator(targetId: string, initiatedByUser
 
 // Recent follow-up targets per branch, used by the RM dashboard to derive
 // "follow-up initiated" status without a separate round trip per branch.
+// Only ever matches branch-level (BM-recipient) targets, since the WHERE
+// clause is itself branch-id-scoped.
 export function findLatestFollowUpTargetsForBranches(branchIds: string[]) {
   if (branchIds.length === 0) return Promise.resolve([]);
   return prisma.followUpTarget.findMany({
@@ -91,7 +110,7 @@ export function listFollowUpsForInitiator(initiatedByUserId: string, take = 20) 
     orderBy: { createdAt: 'desc' },
     take,
     include: {
-      targets: { include: { branch: { select: { id: true, name: true } } } },
+      targets: true,
     },
   });
 }

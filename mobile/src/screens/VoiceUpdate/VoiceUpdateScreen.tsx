@@ -18,31 +18,10 @@ import { fetchLeads } from '../../api/orgApi';
 import { useVoiceRecorder } from './useVoiceRecorder';
 import { ExtractedCandidate, PipelineStage } from '../../types/api';
 import { ApiError } from '../../api/client';
-import { BMStackParamList } from '../../navigation/RootNavigator';
+import { RootStackParamList } from '../../navigation/RootNavigator';
+import { STAGE_ORDER as STAGES, STAGE_LABELS } from '../../constants/pipelineStages';
 
-type Props = NativeStackScreenProps<BMStackParamList, 'VoiceUpdate'>;
-
-const STAGES: PipelineStage[] = [
-  'LEAD_CONFIRMED',
-  'DOCUMENTS_RECEIVED',
-  'BRANCH_PROCESSING',
-  'SANCTIONED',
-  'TO_RAC',
-  'APPROVED',
-  'DISBURSED',
-];
-
-// Raw enum values (e.g. "DOCUMENTS_RECEIVED", "TO_RAC") read poorly as chip
-// text, so map each stage to a human-readable label for display.
-const STAGE_LABELS: Record<PipelineStage, string> = {
-  LEAD_CONFIRMED: 'Lead Confirmed',
-  DOCUMENTS_RECEIVED: 'Documents Received',
-  BRANCH_PROCESSING: 'Branch Processing',
-  SANCTIONED: 'Sanctioned',
-  TO_RAC: 'To RAC',
-  APPROVED: 'Approved',
-  DISBURSED: 'Disbursed',
-};
+type Props = NativeStackScreenProps<RootStackParamList, 'VoiceUpdate'>;
 
 interface ResolvedCandidate {
   index: number;

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import {
   createManualProposalHandler,
   listProposalsForLeadHandler,
-  listMyBranchProposalsHandler,
+  listMyPendingProposalsHandler,
   confirmProposalHandler,
   confirmProposalsBatchHandler,
   rejectProposalHandler,
@@ -22,9 +22,12 @@ import {
 const router = Router();
 
 router.use(authenticate);
-router.use(requireRole('BM'));
+// Generalized from BM-only to BM/RM/ZM (Full-Hierarchy Expansion plan,
+// Phase 2) — fine-grained scope (own branch/region/zone) is enforced
+// inside the service layer via authorization.ts, not here.
+router.use(requireRole('BM', 'RM', 'ZM'));
 
-router.get('/proposals', validate({ query: listProposalsQuerySchema }), listMyBranchProposalsHandler);
+router.get('/proposals', validate({ query: listProposalsQuerySchema }), listMyPendingProposalsHandler);
 router.post(
   '/proposals/confirm-batch',
   validate({ body: confirmProposalsBatchSchema }),

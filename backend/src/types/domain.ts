@@ -28,6 +28,8 @@ export interface AuthTokenPayload {
   regionId?: string;
   // Present only for BM tokens.
   branchId?: string;
+  // Present only for ZM tokens.
+  zoneId?: string;
 }
 
 // Attached to Express's Request object by the authenticate middleware.

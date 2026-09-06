@@ -43,16 +43,18 @@ export async function getMyScope(user: AuthTokenPayload) {
 }
 
 export async function getRegion(user: AuthTokenPayload, regionId: string) {
-  if (!canAccessRegion(user, regionId)) {
-    throw new AuthorizationError('You are not authorized to access this region');
-  }
   const region = await findRegionById(regionId);
   if (!region) throw new NotFoundError('Region');
+  if (!canAccessRegion(user, regionId, region.zoneId)) {
+    throw new AuthorizationError('You are not authorized to access this region');
+  }
   return region;
 }
 
 export async function getBranchesForRegion(user: AuthTokenPayload, regionId: string) {
-  if (!canAccessRegion(user, regionId)) {
+  const region = await findRegionById(regionId);
+  if (!region) throw new NotFoundError('Region');
+  if (!canAccessRegion(user, regionId, region.zoneId)) {
     throw new AuthorizationError('You are not authorized to access this region');
   }
   return findBranchesByRegion(regionId);
@@ -62,7 +64,7 @@ export async function getBranch(user: AuthTokenPayload, branchId: string) {
   const branch = await findBranchById(branchId);
   if (!branch) throw new NotFoundError('Branch');
 
-  if (!canAccessBranch(user, branchId, branch.regionId)) {
+  if (!canAccessBranch(user, branchId, branch.regionId, branch.region.zoneId)) {
     throw new AuthorizationError('You are not authorized to access this branch');
   }
   return branch;
