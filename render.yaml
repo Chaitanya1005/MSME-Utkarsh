@@ -1,0 +1,29 @@
+databases:
+  - name: msme-utkarsh-db
+    plan: free
+    postgresMajorVersion: "16"
+
+services:
+  - type: web
+    name: msme-utkarsh-backend
+    runtime: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: msme-utkarsh-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 8h
+      - key: CORS_ALLOWED_ORIGINS
+        value: ""
+      - key: SARVAM_API_KEY
+        sync: false

@@ -21,23 +21,23 @@ type Role = {
 const ROLES: Role[] = [
   {
     id: 'central',
-    label: 'General Manager',
-    shortLabel: 'General Manager',
+    label: 'Corporate Office',
+    shortLabel: 'CO',
   },
   {
     id: 'zonal',
-    label: 'Zonal Head',
-    shortLabel: 'Zonal Head',
+    label: 'Zonal Office',
+    shortLabel: 'ZO',
   },
   {
     id: 'regional',
-    label: 'Regional Head',
-    shortLabel: 'Regional Head',
+    label: 'Regional Office',
+    shortLabel: 'RO',
   },
   {
     id: 'branch',
-    label: 'Branch Head',
-    shortLabel: 'Branch Head',
+    label: 'Branch Office',
+    shortLabel: 'BO',
   },
 ];
 
@@ -152,15 +152,7 @@ export function LoginScreen() {
                   <View style={styles.roleAccent} />
 
                   <View style={styles.roleIcon}>
-                    <Text style={styles.roleIconText}>
-                      {role.id === 'central'
-                        ? 'GM'
-                        : role.id === 'zonal'
-                          ? 'ZH'
-                          : role.id === 'regional'
-                            ? 'RH'
-                            : 'BH'}
-                    </Text>
+                    <Text style={styles.roleIconText}>{role.shortLabel}</Text>
                   </View>
 
                   <Text style={styles.roleText}>{role.label}</Text>

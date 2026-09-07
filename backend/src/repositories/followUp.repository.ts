@@ -104,6 +104,20 @@ export function findLatestFollowUpTargetsForBranches(branchIds: string[]) {
   });
 }
 
+// Recent follow-up targets per recipient user, used by the ZM/GM
+// dashboards to derive "follow-up initiated" status for a region/zone
+// the same way findLatestFollowUpTargetsForBranches does for a BM's
+// branch — a region's recipient is its RM, a zone's is its ZM (Full-
+// Hierarchy Expansion plan).
+export function findLatestFollowUpTargetsForRecipients(recipientUserIds: string[]) {
+  if (recipientUserIds.length === 0) return Promise.resolve([]);
+  return prisma.followUpTarget.findMany({
+    where: { recipientUserId: { in: recipientUserIds } },
+    orderBy: { createdAt: 'desc' },
+    include: { followUp: { select: { channel: true, createdAt: true } } },
+  });
+}
+
 export function listFollowUpsForInitiator(initiatedByUserId: string, take = 20) {
   return prisma.followUp.findMany({
     where: { initiatedByUserId },

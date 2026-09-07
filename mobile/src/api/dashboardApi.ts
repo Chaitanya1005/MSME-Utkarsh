@@ -1,5 +1,5 @@
 import { apiRequest } from './client';
-import { RmDashboard, ZmDashboard, GmDashboard, RegionDetail, ZoneDetail } from '../types/api';
+import { RmDashboard, ZmDashboard, GmDashboard, RegionDetail, ZoneDetail, MyLeadsResult } from '../types/api';
 
 export function fetchRmDashboard(): Promise<RmDashboard> {
   return apiRequest<RmDashboard>('/rm/dashboard');
@@ -19,4 +19,8 @@ export function fetchRegionDetail(regionId: string): Promise<RegionDetail> {
 
 export function fetchZoneDetail(zoneId: string): Promise<ZoneDetail> {
   return apiRequest<ZoneDetail>(`/zones/${zoneId}/detail`);
+}
+
+export function fetchMyLeads(): Promise<MyLeadsResult> {
+  return apiRequest<MyLeadsResult>('/my-leads');
 }

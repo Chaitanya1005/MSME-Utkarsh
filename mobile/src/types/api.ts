@@ -111,6 +111,7 @@ export interface DashboardBranch {
 export interface RmDashboard {
   region: { id: string; name: string };
   branches: DashboardBranch[];
+  regionDirectLeadsCount: number;
   summary: {
     totalBranches: number;
     branchesRequiringUpdate: number;
@@ -124,28 +125,48 @@ export interface RmDashboard {
 export interface ZmDashboardRegion {
   id: string;
   name: string;
+  rm: { id: string; name: string } | null;
   branchCount: number;
   totalLeads: number;
   leadsByStage: Record<PipelineStage, number>;
+  lastLeadUpdateAt: string | null;
+  latestFollowUp: { channel: FollowUpChannel; sentAt: string | null; status: FollowUpTargetStatus } | null;
+  updateStatus: BranchUpdateStatus;
 }
 
 export interface ZmDashboard {
   zone: { id: string; name: string };
   regions: ZmDashboardRegion[];
-  summary: { totalRegions: number; totalBranches: number; totalLeads: number };
+  summary: {
+    totalRegions: number;
+    totalBranches: number;
+    totalLeads: number;
+    regionsRequiringUpdate: number;
+    regionsWithFollowUpInFlight: number;
+  };
 }
 
 export interface GmDashboardZone {
   id: string;
   name: string;
+  zm: { id: string; name: string } | null;
   branchCount: number;
   totalLeads: number;
   leadsByStage: Record<PipelineStage, number>;
+  lastLeadUpdateAt: string | null;
+  latestFollowUp: { channel: FollowUpChannel; sentAt: string | null; status: FollowUpTargetStatus } | null;
+  updateStatus: BranchUpdateStatus;
 }
 
 export interface GmDashboard {
   zones: GmDashboardZone[];
-  summary: { totalZones: number; totalBranches: number; totalLeads: number };
+  summary: {
+    totalZones: number;
+    totalBranches: number;
+    totalLeads: number;
+    zonesRequiringUpdate: number;
+    zonesWithFollowUpInFlight: number;
+  };
 }
 
 export interface RegionDetailBranch {
@@ -156,11 +177,27 @@ export interface RegionDetailBranch {
   leadsByStage: Record<PipelineStage, number>;
 }
 
+export interface RegionDetailLead {
+  id: string;
+  sourceSrNo: string | null;
+  customerName: string;
+  cbiPesStage: PipelineStage;
+}
+
 export interface RegionDetail {
   region: { id: string; name: string };
   totalLeads: number;
   leadsByStage: Record<PipelineStage, number>;
   branches: RegionDetailBranch[];
+  regionLeads: RegionDetailLead[];
+}
+
+// RM's own leads (their region's direct leads) or a ZM's own leads
+// (every direct lead across their zone's regions) — backs the "My
+// Leads" screen, the RM/ZM equivalent of BMLeadListScreen.
+export interface MyLeadsResult {
+  scopeLabel: string;
+  leads: RegionDetailLead[];
 }
 
 export interface ZoneDetailRegion {
@@ -171,11 +208,22 @@ export interface ZoneDetailRegion {
   leadsByStage: Record<PipelineStage, number>;
 }
 
+export interface ZoneDetailBranch {
+  id: string;
+  name: string;
+  bm: { id: string; name: string } | null;
+  totalLeads: number;
+  leadsByStage: Record<PipelineStage, number>;
+  region: { id: string; name: string };
+}
+
 export interface ZoneDetail {
   zone: { id: string; name: string };
   totalLeads: number;
   leadsByStage: Record<PipelineStage, number>;
   regions: ZoneDetailRegion[];
+  zoneLeads: RegionDetailLead[];
+  zoneBranches: ZoneDetailBranch[];
 }
 
 export type FollowUpChannel = 'WHATSAPP' | 'EMAIL';

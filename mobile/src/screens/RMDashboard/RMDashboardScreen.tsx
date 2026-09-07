@@ -200,6 +200,10 @@ export function RMDashboardScreen({ navigation }: Props) {
     });
   }
 
+  function openMyLeads() {
+    navigation.navigate('MyLeads');
+  }
+
   function openDrawer() {
     setDrawerVisible(true);
   }
@@ -366,6 +370,38 @@ export function RMDashboardScreen({ navigation }: Props) {
                   </View>
                 </View>
               </View>
+
+              {/* MY LEADS */}
+              <TouchableOpacity
+                activeOpacity={0.88}
+                style={styles.myLeadsCard}
+                onPress={openMyLeads}
+                testID="my-leads-cta"
+              >
+                <View style={styles.myLeadsIcon}>
+                  <Text style={styles.myLeadsIconText}>
+                    ◎
+                  </Text>
+                </View>
+
+                <View style={styles.myLeadsTextContainer}>
+                  <Text style={styles.myLeadsTitle}>
+                    My Leads
+                  </Text>
+
+                  <Text style={styles.myLeadsSubtitle}>
+                    {data!.regionDirectLeadsCount} lead
+                    {data!.regionDirectLeadsCount === 1
+                      ? ''
+                      : 's'}{' '}
+                    assigned directly to your region
+                  </Text>
+                </View>
+
+                <Text style={styles.myLeadsArrow}>
+                  ›
+                </Text>
+              </TouchableOpacity>
 
               {/* PERFORMANCE OVERVIEW */}
 
@@ -1044,6 +1080,56 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     marginTop: 2,
+  },
+
+  myLeadsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#BFD5EA',
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    marginBottom: 16,
+  },
+
+  myLeadsIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#EAF2FB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+
+  myLeadsIconText: {
+    color: '#0B5CAB',
+    fontSize: 18,
+    fontWeight: '800',
+  },
+
+  myLeadsTextContainer: {
+    flex: 1,
+  },
+
+  myLeadsTitle: {
+    color: '#182533',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+
+  myLeadsSubtitle: {
+    color: '#7A8794',
+    fontSize: 11,
+    marginTop: 2,
+  },
+
+  myLeadsArrow: {
+    color: '#0B5CAB',
+    fontSize: 24,
+    fontWeight: '300',
   },
 
   sectionHeader: {

@@ -8,6 +8,7 @@
       "ios"
     ],
     "scheme": "cbipes",
+    "icon": "./src/assets/app-icon.png",
     "plugins": [
       [
         "expo-audio",
@@ -22,7 +23,11 @@
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS"
-      ]
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/app-icon.png",
+        "backgroundColor": "#FFFFFF"
+      }
     },
     "extra": {
       "eas": {

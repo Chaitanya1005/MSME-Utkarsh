@@ -18,6 +18,8 @@ import { ProposeUpdateScreen } from '../screens/ProposeUpdate/ProposeUpdateScree
 import { VoiceUpdateScreen } from '../screens/VoiceUpdate/VoiceUpdateScreen';
 import { ProposalReviewScreen } from '../screens/ProposalReview/ProposalReviewScreen';
 import { FollowUpAccessScreen } from '../screens/FollowUpAccess/FollowUpAccessScreen';
+import { MyLeadsScreen } from '../screens/MyLeads/MyLeadsScreen';
+import { SplashScreen } from '../screens/Splash/SplashScreen';
 
 import { PipelineStage } from '../types/api';
 
@@ -60,6 +62,10 @@ export type RootStackParamList = {
   };
 
   BMLeadList: undefined;
+
+  // RM's/ZM's own leads (assigned directly to their region, or to any
+  // region in their zone) — the RM/ZM equivalent of BMLeadList.
+  MyLeads: undefined;
 
   LeadDetail: {
     leadId: string;
@@ -108,7 +114,7 @@ const RootNavigator = () => {
   const { user, status } = useAuth();
 
   if (status === 'loading') {
-    return null;
+    return <SplashScreen />;
   }
 
   const isAuthenticated = !!user;
@@ -159,6 +165,11 @@ const RootNavigator = () => {
             <Stack.Screen
               name="BranchDetail"
               component={BranchDetailScreen}
+            />
+
+            <Stack.Screen
+              name="MyLeads"
+              component={MyLeadsScreen}
             />
 
             <Stack.Screen
@@ -237,6 +248,11 @@ const RootNavigator = () => {
             <Stack.Screen
               name="BranchDetail"
               component={BranchDetailScreen}
+            />
+
+            <Stack.Screen
+              name="MyLeads"
+              component={MyLeadsScreen}
             />
 
             <Stack.Screen

@@ -146,3 +146,68 @@ export async function countLeadsForRegion(regionId: string, branchIds: string[])
     },
   });
 }
+
+// Stage counts for leads assigned directly to a region (branchId null,
+// regionId set) — i.e. NOT already covered by countLeadsByStageForBranches.
+// Every dashboard/detail rollup must add this in alongside the
+// branch-bucketed counts, or a region-level lead (the RM/ZM's own leads,
+// not any branch's) becomes invisible in every total (Full-Hierarchy
+// Expansion plan).
+export interface RegionStageCount {
+  regionId: string;
+  cbiPesStage: PipelineStage;
+  count: number;
+}
+
+export async function countLeadsByStageForRegions(regionIds: string[]): Promise<RegionStageCount[]> {
+  if (regionIds.length === 0) return [];
+  const rows = await prisma.lead.groupBy({
+    by: ['regionId', 'cbiPesStage'],
+    where: { regionId: { in: regionIds }, branchId: null },
+    _count: { _all: true },
+  });
+  return rows
+    .filter((r): r is typeof r & { regionId: string } => r.regionId !== null)
+    .map((r) => ({ regionId: r.regionId, cbiPesStage: r.cbiPesStage, count: r._count._all }));
+}
+
+export interface RegionLastLeadActivity {
+  regionId: string;
+  lastLeadUpdateAt: Date;
+}
+
+// Same shape as findLastLeadActivityForBranches, for a region's own
+// direct leads only (branchId null) — the caller merges this with the
+// branch-bucketed result to get "last activity anywhere under this
+// region" (Full-Hierarchy Expansion plan: ZM/GM dashboard status pills).
+export async function findLastLeadActivityForRegions(regionIds: string[]): Promise<RegionLastLeadActivity[]> {
+  if (regionIds.length === 0) return [];
+  const rows = await prisma.lead.groupBy({
+    by: ['regionId'],
+    where: { regionId: { in: regionIds }, branchId: null },
+    _max: { updatedAt: true },
+  });
+  return rows
+    .filter((r): r is typeof r & { regionId: string; _max: { updatedAt: Date } } => r.regionId !== null && r._max.updatedAt !== null)
+    .map((r) => ({ regionId: r.regionId, lastLeadUpdateAt: r._max.updatedAt }));
+}
+
+export interface RegionDirectLeadSummary {
+  id: string;
+  sourceSrNo: string | null;
+  customerName: string;
+  cbiPesStage: PipelineStage;
+  regionId: string;
+}
+
+// The actual lead rows for a set of regions' direct (branchless) leads —
+// used to render a "leads in this region" list a viewer can tap into,
+// alongside the branch list RegionDetailScreen already shows.
+export function findLeadsDirectlyInRegions(regionIds: string[]): Promise<RegionDirectLeadSummary[]> {
+  if (regionIds.length === 0) return Promise.resolve([]);
+  return prisma.lead.findMany({
+    where: { regionId: { in: regionIds }, branchId: null },
+    select: { id: true, sourceSrNo: true, customerName: true, cbiPesStage: true, regionId: true },
+    orderBy: { createdAt: 'desc' },
+  }) as Promise<RegionDirectLeadSummary[]>;
+}

@@ -35,3 +35,9 @@ export const getZoneDetailHandler = asyncHandler(async (req: Request, res: Respo
   const detail = await dashboardService.getZoneDetail(req.user, zoneId);
   sendSuccess(res, detail);
 });
+
+export const getMyLeadsHandler = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user) throw new AuthenticationError();
+  const result = await dashboardService.getMyLeads(req.user);
+  sendSuccess(res, result);
+});
