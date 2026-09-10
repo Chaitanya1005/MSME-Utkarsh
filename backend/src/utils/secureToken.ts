@@ -14,8 +14,13 @@ import crypto from 'crypto';
 
 const TOKEN_BYTES = 32; // 256 bits of entropy — not brute-forceable
 
+// base64url, not hex: same 256 bits, but ~43 characters instead of 64
+// (6 bits/char vs 4 bits/char) — this token goes straight into a
+// WhatsApp message as visible link text, so shorter is genuinely worth
+// it, with zero security cost (still crypto.randomBytes(32), just a
+// more compact string encoding of the same entropy).
 export function generateAccessToken(): string {
-  return crypto.randomBytes(TOKEN_BYTES).toString('hex');
+  return crypto.randomBytes(TOKEN_BYTES).toString('base64url');
 }
 
 export function hashAccessToken(rawToken: string): string {

@@ -37,7 +37,8 @@ function extractRawToken(deepLinkUrl: string): string {
   // The access link is a real https:// URL (routes/followUpLanding.routes.ts),
   // not the cbipes:// scheme directly — WhatsApp only linkifies http(s)
   // links. Match any host so this doesn't depend on PUBLIC_BASE_URL.
-  const match = decodeURIComponent(deepLinkUrl).match(/https?:\/\/[^/]+\/follow-up-access\/([0-9a-f]{64})/);
+  // base64url alphabet, not hex — see utils/secureToken.ts.
+  const match = decodeURIComponent(deepLinkUrl).match(/https?:\/\/[^/]+\/follow-up-access\/([A-Za-z0-9_-]{43})/);
   if (!match) throw new Error('No access token found in deep link');
   return match[1];
 }

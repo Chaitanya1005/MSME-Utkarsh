@@ -1,9 +1,9 @@
 import { generateAccessToken, hashAccessToken } from '../../src/utils/secureToken';
 
 describe('secure access token', () => {
-  it('generates a token with enough entropy to be unguessable (256 bits / 64 hex chars)', () => {
+  it('generates a token with enough entropy to be unguessable (256 bits / 43 base64url chars)', () => {
     const token = generateAccessToken();
-    expect(token).toMatch(/^[0-9a-f]{64}$/);
+    expect(token).toMatch(/^[A-Za-z0-9_-]{43}$/);
   });
 
   it('generates a different token on every call', () => {

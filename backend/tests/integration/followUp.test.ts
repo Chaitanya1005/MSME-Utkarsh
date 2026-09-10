@@ -152,7 +152,8 @@ describe('GET /api/follow-up-access/:token — secure BM handoff', () => {
     // http(s) links). Extract it the same way a human reading the
     // WhatsApp message would.
     const decoded = decodeURIComponent(deepLink);
-    const match = decoded.match(/https?:\/\/[^/]+\/follow-up-access\/([0-9a-f]{64})/);
+    // base64url alphabet, not hex — see utils/secureToken.ts.
+    const match = decoded.match(/https?:\/\/[^/]+\/follow-up-access\/([A-Za-z0-9_-]{43})/);
     expect(match).not.toBeNull();
     const rawToken = match![1];
 
