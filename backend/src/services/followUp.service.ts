@@ -23,6 +23,7 @@ import { generateAccessToken, hashAccessToken } from '../utils/secureToken';
 import { buildFollowUpMessage, sanitizeCustomNote, ROLE_LABELS } from '../utils/messageTemplate';
 import { whatsAppProvider, emailProvider } from './providers';
 import { signAuthToken } from '../utils/jwt';
+import { env } from '../config/env';
 
 // Secure access links are valid for a bounded window, not forever — an
 // MVP-documented assumption (spec section 15) pending a real product
@@ -97,6 +98,20 @@ function labelFor(user: {
   return user.name;
 }
 
+// The sender's own org unit, bare (no "Branch"/"Region"/"Zone" prefix —
+// unlike labelFor, which is for describing a *recipient's* unit to a
+// third party, this is shown to the recipient as "who is asking", so a
+// short, familiar name reads better than a fully qualified one). CO has
+// no org unit of its own (single global GM, see authorization.ts) so it
+// gets a fixed stand-in naming Central Bank of India's head office.
+function senderOrgUnitLabelFor(user: ResolvedUser): string {
+  if (user.role === 'CO') return 'Mumbai';
+  if (user.branch) return user.branch.name;
+  if (user.region) return user.region.name;
+  if (user.zone) return user.zone.name;
+  return user.name;
+}
+
 function orgUnitLineFor(user: ResolvedUser): string {
   if (user.branch) return `Branch: ${user.branch.name} (Region: ${user.branch.region.name})`;
   if (user.region) return `Region: ${user.region.name} (Zone: ${user.region.zone.name})`;
@@ -160,6 +175,14 @@ export async function createFollowUp(
   const recipients = await assertRecipientsInScope(user, request.recipientUserIds);
   const customNote = sanitizeCustomNote(request.customNote);
 
+  // Resolved once — the same for every recipient in this batch — to
+  // build the "Requested by: <Role> (<sender's own org unit>)" line.
+  const [senderResolved] = await findUsersByIds([user.userId]);
+  if (!senderResolved) {
+    throw new AppError(500, 'INTERNAL_ERROR', 'Could not resolve the sender');
+  }
+  const senderOrgUnitLabel = senderOrgUnitLabelFor(senderResolved);
+
   // Each target gets its own token/message/expiry — sharing a single
   // token across recipients would let one recipient's link double as
   // access to another recipient's follow-up.
@@ -174,15 +197,18 @@ export async function createFollowUp(
     const rawToken = generateAccessToken();
     const accessTokenHash = hashAccessToken(rawToken);
     const tokenExpiresAt = new Date(Date.now() + ACCESS_TOKEN_TTL_HOURS * 60 * 60 * 1000);
-    // The mobile/web landing route that exchanges this opaque token for a
-    // real session — see followUpAccess.controller.ts. The RAW token
-    // travels only inside this one-time-composed message, never as a JWT
-    // and never logged.
-    const accessUrl = `cbipes://follow-up-access/${rawToken}`;
+    // A real https:// URL, not the cbipes:// scheme directly — WhatsApp
+    // only renders http(s) links as tappable; a raw custom-scheme URL
+    // sent as message text is inert. This lands on a small HTML page
+    // (routes/followUpLanding.routes.ts) that hands off into the app via
+    // that same scheme, with a download fallback if it isn't installed.
+    // The RAW token travels only inside this one-time-composed message,
+    // never as a JWT and never logged.
+    const accessUrl = `${env.publicBaseUrl}/follow-up-access/${rawToken}`;
 
     const message = buildFollowUpMessage({
       orgUnitLine: orgUnitLineFor(recipient.user),
-      senderName: user.username,
+      senderOrgUnitLabel,
       senderRole: user.role as Role,
       recipientName: recipient.user.name,
       recipientRole: recipient.user.role,

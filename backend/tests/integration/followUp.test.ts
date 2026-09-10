@@ -147,10 +147,12 @@ describe('GET /api/follow-up-access/:token — secure BM handoff', () => {
 
     const deepLink: string = createRes.body.data.targets[0].whatsAppDeepLinkUrl;
     // The deep link contains the message (URL-encoded), which contains the
-    // raw access token inside the cbipes:// URL. Extract it the same way a
-    // human reading the WhatsApp message would.
+    // raw access token inside the follow-up landing page's https:// URL
+    // (not the cbipes:// scheme directly — WhatsApp only linkifies
+    // http(s) links). Extract it the same way a human reading the
+    // WhatsApp message would.
     const decoded = decodeURIComponent(deepLink);
-    const match = decoded.match(/cbipes:\/\/follow-up-access\/([0-9a-f]{64})/);
+    const match = decoded.match(/https?:\/\/[^/]+\/follow-up-access\/([0-9a-f]{64})/);
     expect(match).not.toBeNull();
     const rawToken = match![1];
 

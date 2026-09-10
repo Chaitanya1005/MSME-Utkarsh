@@ -18,6 +18,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { env, isTest } from './config/env';
 import whatsappWebhookRoutes from './routes/whatsappWebhook.routes';
 import performanceRoutes from './routes/performance.routes';
+import followUpLandingRoutes from './routes/followUpLanding.routes';
 export function createApp(): Express {
   const app = express();
 
@@ -51,6 +52,9 @@ export function createApp(): Express {
   // /api/rm/follow-ups mount above is kept for backward compatibility.
   app.use('/api/follow-ups', followUpRoutes);
   app.use('/api/follow-up-access', followUpAccessRoutes);
+  // Plain HTML landing page (not JSON) — the actual link put in the
+  // follow-up message, since WhatsApp only linkifies http(s):// URLs.
+  app.use('/follow-up-access', followUpLandingRoutes);
   // Phase 3/4 additions — additive only, no existing route above is touched.
   app.use('/api/bm', bmLeadUpdateRoutes);
   app.use('/api/bm/voice-updates', voiceUpdateRoutes);

@@ -5,6 +5,7 @@ import {
   getRegionalPerformance,
   getBranchPerformance,
   updateBranchPerformance,
+  getPerformanceEvaluation,
 } from '../services/performance.service';
 
 import {
@@ -99,5 +100,24 @@ export const updateBranchPerformanceHandler = async (
   return res.status(200).json({
     success: true,
     data: performance,
+  });
+};
+
+export const getPerformanceEvaluationHandler = async (
+  req: Request,
+  res: Response,
+) => {
+  if (!req.user) {
+    throw new AuthenticationError(
+      'Authentication required',
+    );
+  }
+
+  const evaluation =
+    await getPerformanceEvaluation(req.user);
+
+  return res.status(200).json({
+    success: true,
+    data: evaluation,
   });
 };

@@ -21,7 +21,13 @@ export interface MessageTemplateInput {
   // "Branch: X (Region Y)" / "Region: X (Zone Y)" / "Zone: X" — rather
   // than baking branch/region-specific formatting into this function.
   orgUnitLine: string;
-  senderName: string;
+  // The sender's own org unit — their zone/region/branch name (e.g.
+  // "MMZO" for a ZM, "NMRO" for an RM), or a fixed stand-in for the
+  // single global GM ("Mumbai" — Central Bank of India's head office).
+  // Shown instead of the sender's raw username, which meant nothing to
+  // a recipient (spec follow-up: "Zonal Head (zm.mmzo)" read as noise;
+  // "Zonal Head (MMZO)" reads as who's actually asking).
+  senderOrgUnitLabel: string;
   senderRole: Role;
   recipientName: string;
   recipientRole: Role;
@@ -41,7 +47,7 @@ export function buildFollowUpMessage(input: MessageTemplateInput): string {
     STANDARD_MESSAGE_HEADER,
     '',
     input.orgUnitLine,
-    `Requested by: ${ROLE_LABELS[input.senderRole]} (${input.senderName})`,
+    `Requested by: ${ROLE_LABELS[input.senderRole]} (${input.senderOrgUnitLabel})`,
     '',
     'Please review and update your lead pipeline at your earliest convenience.',
   ];

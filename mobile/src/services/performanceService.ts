@@ -44,6 +44,25 @@ export interface BranchPerformanceDetail {
   canUpdate: boolean;
 }
 
+export interface PerformanceEvaluationMetric {
+  label: string;
+  asOf: string;
+  value: number | null;
+}
+
+export interface PerformanceEvaluationBranch {
+  branchId: string;
+  branchName: string;
+  businessAsOfToday: number | null;
+  comparisons: PerformanceEvaluationMetric[];
+}
+
+export async function getPerformanceEvaluation() {
+  return apiRequest<PerformanceEvaluationBranch[]>(
+    '/performance/evaluation',
+  );
+}
+
 export async function getRegionalPerformance(
   periodType: PerformancePeriodType = 'QUARTER',
 ) {

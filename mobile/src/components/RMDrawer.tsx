@@ -125,7 +125,7 @@ export const RMDrawer = ({
 
             <DrawerItem
               icon="▥"
-              label="My Branches"
+              label="Performance Evaluation"
               onPress={() =>
                 handleNavigation(
                   onMyBranches,

@@ -3,17 +3,17 @@ import { buildFollowUpMessage, sanitizeCustomNote, ROLE_LABELS } from '../../src
 describe('buildFollowUpMessage', () => {
   const baseInput = {
     orgUnitLine: 'Branch: Branch A101 (Region: Region A1)',
-    senderName: 'rm.a1',
+    senderOrgUnitLabel: 'NMRO',
     senderRole: 'RM' as const,
     recipientName: 'bm.a101',
     recipientRole: 'BM' as const,
     accessUrl: 'cbipes://follow-up-access/abc123',
   };
 
-  it('includes the org unit line, sender name, role label, and access URL', () => {
+  it('includes the org unit line, sender org unit, role label, and access URL', () => {
     const message = buildFollowUpMessage(baseInput);
     expect(message).toContain('Branch: Branch A101 (Region: Region A1)');
-    expect(message).toContain('Requested by: Regional Head (rm.a1)');
+    expect(message).toContain('Requested by: Regional Head (NMRO)');
     expect(message).toContain('cbipes://follow-up-access/abc123');
   });
 
@@ -47,16 +47,16 @@ describe('buildFollowUpMessage', () => {
   ] as const)('renders the correct role labels for %s -> %s', (senderRole, recipientRole) => {
     const message = buildFollowUpMessage({
       ...baseInput,
-      senderName: 'sender.name',
+      senderOrgUnitLabel: 'MMZO',
       senderRole,
       recipientName: 'recipient.name',
       recipientRole,
     });
-    expect(message).toContain(`Requested by: ${ROLE_LABELS[senderRole]} (sender.name)`);
+    expect(message).toContain(`Requested by: ${ROLE_LABELS[senderRole]} (MMZO)`);
     expect(message).toContain(`intended only for the ${ROLE_LABELS[recipientRole]} named above`);
   });
 
-  it('actually interpolates senderName into the "Note from" line, not a hardcoded role', () => {
+  it('interpolates the actual sender role into the "Note from" line, not a hardcoded one', () => {
     const message = buildFollowUpMessage({
       ...baseInput,
       senderRole: 'ZM',

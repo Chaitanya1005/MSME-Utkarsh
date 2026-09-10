@@ -10,6 +10,13 @@ import {
   PerformancePeriodType,
   Prisma,
 } from '@prisma/client';
+import {
+  getCurrentFiscalYearWindow,
+  getPreviousFiscalYearWindow,
+  getNextMonthWindow,
+  getNextQuarterWindow,
+  DateWindow,
+} from './fiscalYear';
 
 function calculatePerformance(
   targetAmount: Prisma.Decimal | number,
@@ -334,4 +341,145 @@ export async function updateBranchPerformance(
         updated.achievedAmount,
       ),
   };
+}
+
+export interface PerformanceEvaluationMetric {
+  label: string;
+  asOf: string; // ISO date (yyyy-mm-dd)
+  value: number | null; // null when no BranchPerformance row exists for this window yet
+}
+
+export interface PerformanceEvaluationBranch {
+  branchId: string;
+  branchName: string;
+  businessAsOfToday: number | null;
+  comparisons: PerformanceEvaluationMetric[]; // always exactly 4, in cycle order
+}
+
+type PerformanceRecord = {
+  branchId: string;
+  periodType: PerformancePeriodType;
+  periodStart: Date;
+  targetAmount: Prisma.Decimal;
+  achievedAmount: Prisma.Decimal;
+};
+
+function findRecord(
+  records: PerformanceRecord[],
+  periodType: PerformancePeriodType,
+  window: DateWindow,
+): PerformanceRecord | undefined {
+  return records.find(
+    (r) =>
+      r.periodType === periodType &&
+      r.periodStart.getTime() === window.start.getTime(),
+  );
+}
+
+function isoDate(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+// The RM-facing "Performance Evaluation" screen (renamed from "My
+// Branches"): per branch, a live "business done as of today" figure
+// plus four comparison points the UI cycles through one at a time on
+// tap rather than showing all at once:
+//   1. Actual business as on 31 March of the previous fiscal year
+//   2. Target for next month-end
+//   3. Target for next quarter-end
+//   4. Target for this fiscal year's year-end (the FY currently in progress)
+// "Business as of today" and metric 4 both read off the SAME current-FY
+// ANNUAL record (achievedAmount vs targetAmount respectively) — the
+// exact record every BM already keeps current via updateBranchPerformance.
+export async function getPerformanceEvaluation(
+  user: AuthTokenPayload,
+): Promise<PerformanceEvaluationBranch[]> {
+  if (!user.regionId) {
+    throw new AuthorizationError(
+      'You are not assigned to a region',
+    );
+  }
+
+  const branches = await prisma.branch.findMany({
+    where: { regionId: user.regionId },
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' },
+  });
+
+  const branchIds = branches.map((b) => b.id);
+
+  const allRecords: PerformanceRecord[] =
+    await prisma.branchPerformance.findMany({
+      where: { branchId: { in: branchIds } },
+      select: {
+        branchId: true,
+        periodType: true,
+        periodStart: true,
+        periodEnd: true,
+        targetAmount: true,
+        achievedAmount: true,
+      },
+    });
+
+  const recordsByBranch = new Map<string, PerformanceRecord[]>();
+  for (const record of allRecords) {
+    const list = recordsByBranch.get(record.branchId) ?? [];
+    list.push(record);
+    recordsByBranch.set(record.branchId, list);
+  }
+
+  const now = new Date();
+  const currentFY = getCurrentFiscalYearWindow(now);
+  const previousFY = getPreviousFiscalYearWindow(now);
+  const nextMonth = getNextMonthWindow(now);
+  const nextQuarter = getNextQuarterWindow(now);
+
+  return branches.map((branch) => {
+    const records = recordsByBranch.get(branch.id) ?? [];
+
+    const currentFYRecord = findRecord(records, 'ANNUAL', currentFY);
+    const previousFYRecord = findRecord(records, 'ANNUAL', previousFY);
+    const nextMonthRecord = findRecord(records, 'MONTH', nextMonth);
+    const nextQuarterRecord = findRecord(records, 'QUARTER', nextQuarter);
+
+    const comparisons: PerformanceEvaluationMetric[] = [
+      {
+        label: 'Business as on 31 March (last FY)',
+        asOf: isoDate(previousFY.end),
+        value: previousFYRecord
+          ? Number(previousFYRecord.achievedAmount)
+          : null,
+      },
+      {
+        label: 'Target for next month',
+        asOf: isoDate(nextMonth.end),
+        value: nextMonthRecord
+          ? Number(nextMonthRecord.targetAmount)
+          : null,
+      },
+      {
+        label: 'Target for next quarter',
+        asOf: isoDate(nextQuarter.end),
+        value: nextQuarterRecord
+          ? Number(nextQuarterRecord.targetAmount)
+          : null,
+      },
+      {
+        label: 'Target for this fiscal year',
+        asOf: isoDate(currentFY.end),
+        value: currentFYRecord
+          ? Number(currentFYRecord.targetAmount)
+          : null,
+      },
+    ];
+
+    return {
+      branchId: branch.id,
+      branchName: branch.name,
+      businessAsOfToday: currentFYRecord
+        ? Number(currentFYRecord.achievedAmount)
+        : null,
+      comparisons,
+    };
+  });
 }

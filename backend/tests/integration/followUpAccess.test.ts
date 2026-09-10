@@ -34,7 +34,10 @@ function decodeJwtPayload(token: string): { exp: number; iat: number; role: stri
 // Pulls the raw access token back out of the WhatsApp deep link exactly the
 // way the BM reading the message would — the API never returns it directly.
 function extractRawToken(deepLinkUrl: string): string {
-  const match = decodeURIComponent(deepLinkUrl).match(/cbipes:\/\/follow-up-access\/([0-9a-f]{64})/);
+  // The access link is a real https:// URL (routes/followUpLanding.routes.ts),
+  // not the cbipes:// scheme directly — WhatsApp only linkifies http(s)
+  // links. Match any host so this doesn't depend on PUBLIC_BASE_URL.
+  const match = decodeURIComponent(deepLinkUrl).match(/https?:\/\/[^/]+\/follow-up-access\/([0-9a-f]{64})/);
   if (!match) throw new Error('No access token found in deep link');
   return match[1];
 }

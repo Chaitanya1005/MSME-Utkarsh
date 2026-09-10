@@ -214,7 +214,7 @@ export function LeadDetailScreen({
         <View style={styles.overviewDivider} />
 
         <OverviewItem
-          label="PROGRESS"
+          label="SOURCE PROGRESS"
           value={lead.sourceStageProgress}
         />
       </View>
@@ -275,7 +275,12 @@ export function LeadDetailScreen({
         />
 
         <InfoRow
-          label="Stage-wise progress"
+          label="Current pipeline stage"
+          value={stageMeta.label}
+        />
+
+        <InfoRow
+          label="Source stage progress"
           value={lead.sourceStageProgress}
         />
 

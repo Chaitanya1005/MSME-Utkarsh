@@ -4,11 +4,18 @@ import {
   getRegionalPerformanceHandler,
   getBranchPerformanceHandler,
   updateBranchPerformanceHandler,
+  getPerformanceEvaluationHandler,
 } from '../controllers/performance.controller';
 
 import { authenticate } from '../middleware/authenticate';
 
 const router = Router();
+
+router.get(
+  '/evaluation',
+  authenticate,
+  getPerformanceEvaluationHandler,
+);
 
 router.get(
   '/regional',

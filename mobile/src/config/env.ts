@@ -20,7 +20,7 @@
 // IP address and make sure the device is on the same Wi-Fi network and
 // your firewall allows inbound connections on the backend's port. This
 // only matters for `__DEV__` — a built APK never uses it.
-const DEV_LAN_HOST = '10.147.115.183';
+const DEV_LAN_HOST = '192.168.1.40';
 const DEV_BACKEND_PORT = 4000;
 
 // The deployed backend (Render). Update this if the Render service is
